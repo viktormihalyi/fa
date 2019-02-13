@@ -31,161 +31,190 @@
 
     <script src=//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js></script>
 
+    <script src="js/App.js"></script>
+    <script src="js/keycodes.js"></script>
+    <script src="js/Program.js"></script>
+    <script src="js/QuadGeometry.js"></script>
+    <script src="js/LinesGeometry.js"></script>
+    <script src="js/Scene.js"></script>
+    <script src="js/Camera.js"></script>
+    <script src="js/Shader.js"></script>
+    <script src="js/Texture2D.js"></script>
+    <script src="js/shaders/idle_vs.essl"></script>
+    <script src="js/shaders/solid_fs.essl"></script>
+
+
     <script>
-        Math.seedrandom(7);
 
-        function randomBetween(min, max) {
-            return Math.floor(Math.random()*(max-min+1)+min);
-        }
+        // Math.seedrandom(7);
 
-        const canvas = document.getElementById("canvas");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const ctx = canvas.getContext("2d");
+        // function randomBetween(min, max) {
+        //     return Math.floor(Math.random()*(max-min+1)+min);
+        // }
 
-        let attractionPoints = [];
-        const ATTRACTION_POINT_COUNT = 500;
+        // const canvas = document.getElementById("canvas");
+        // canvas.width = window.innerWidth;
+        // canvas.height = window.innerHeight;
+        // const ctx = canvas.getContext("2d");
 
-        const CIRCLE_CENTER = new Vec2(canvas.width/2, canvas.height/4);
-        const CIRCLE_RADIUS = 200;
+        // const ATTRACTION_POINT_COUNT = 500;
 
-        const INFL_MIN_DIST = 15;
-        const INFL_MAX_DIST = 50;
+        // const CIRCLE_CENTER = new Vec3(canvas.width/2, canvas.height/4, 0);
+        // const CIRCLE_RADIUS = 200;
 
-        const BRANCH_LENGTH = 5;
-        const TREE_START_POS = new Vec2(canvas.width/2, canvas.height);
-        const INITIAL_DIRECTION = new Vec2(0, -1);
+        // const INFL_MIN_DIST = 15;
+        // const INFL_MAX_DIST = 50;
 
-        function good_point(pos) {
-            return pos.minus(CIRCLE_CENTER).length() < CIRCLE_RADIUS;
-        }
+        // const BRANCH_LENGTH = 5;
+        // const TREE_START_POS = new Vec3(canvas.width/2, canvas.height, 0);
+        // const INITIAL_DIRECTION = new Vec3(0, -1, 0);
 
-        while (attractionPoints.length < ATTRACTION_POINT_COUNT) {
-            const rndpoint = new Vec2(
-                randomBetween(0, canvas.width),
-                randomBetween(0, canvas.height));
+        // let tree = [];
+        // let attractionPoints = [];
 
-            if (good_point(rndpoint)) {
-                attractionPoints.push(rndpoint);
-            }
-        }
+        // class TreeNode {
+        //     constructor(parent, pos, dir, width) {
+        //         this.parent = parent;
+        //         this.pos = pos;
+        //         this.dir = dir.clone().normalize();
+        //         this.width = width;
+        //     }
+        // }
 
+        // function good_point(pos) {
+        //     return pos.minus(CIRCLE_CENTER).length() < CIRCLE_RADIUS;
+        // }
 
-        class TreeNode {
-            constructor(parent, pos, dir, width) {
-                this.parent = parent;
-                this.pos = pos;
-                this.dir = dir.clone().normalize();
-                this.width = width;
-            }
-        }
+        // function setup() {
+        //     while (attractionPoints.length < ATTRACTION_POINT_COUNT) {
+        //         const rndpoint = new Vec3(
+        //             randomBetween(0, canvas.width),
+        //             randomBetween(0, canvas.height), 1);
 
-        const tree = [];
-        tree.push(new TreeNode(null, TREE_START_POS, INITIAL_DIRECTION, 10));
+        //         if (good_point(rndpoint)) {
+        //             attractionPoints.push(rndpoint);
+        //         }
+        //     }
 
+        //     tree.push(new TreeNode(null, TREE_START_POS, INITIAL_DIRECTION, 10));
+        // }
 
-        function updateAndRender() {
-            console.log(tree.length);
-            if (attractionPoints.length === 0 || tree.length > 1500) {
-                return;
-            }
+        // function drawLine(from, to) {
+        //     ctx.beginPath();
+        //     ctx.moveTo(from.x, from.y);
+        //     ctx.lineTo(to.x, to.y);
+        //     ctx.stroke();
+        // }
 
-            let influencedNodes = tree.map(node => ({node: node, attrs: []}));
+        // function render() {
+        //     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // find closest node to each attraction point
-            let found = false;
-            for (let apoint of attractionPoints) {
+        //     // draw tree
+        //     for (let n of tree) {
+        //         // let n = tree[tree.length-1];
+        //         if (n.parent !== null) {
+        //             ctx.fillStyle = "#FF0000";
+        //             ctx.lineWidth = n.width;
+        //             drawLine(n.pos, n.parent.pos);
+        //         }
+        //     }
 
-                let closest = null;
-                let closestDist = Number.MAX_SAFE_INTEGER;
-                for (let treeNode of tree) {
-                    let dist = treeNode.pos.minus(apoint).length();
-                    if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
-                        closest = treeNode;
-                        closestDist = dist;
-                    }
-                }
+        //     // draw attraction points
+        //     for (let point of attractionPoints) {
+        //         ctx.fillStyle = "#0000FF44";
+        //         ctx.fillRect(point.x-2, point.y-2, 4, 4);
+        //     }
+        // }
 
-                if (closest !== null) {
-                    found = true;
-                    let t = influencedNodes.find((n) => n.node === closest);
-                    t.attrs.push(apoint);
-                }
-            }
+        // function removeReachedAttractionPoints() {
+        //     attractionPoints = attractionPoints.filter((e) => {
+        //         let closestDist = Number.MAX_SAFE_INTEGER;
+        //         for (let treeNode of tree) {
+        //             let dist = treeNode.pos.minus(e).length();
+        //             if (dist < closestDist) {
+        //                 closestDist = dist;
+        //             }
+        //         }
+        //         return closestDist >= INFL_MIN_DIST;
+        //     });
+        // }
 
-            // grow tree
-            if (!found) {
-                // no attraction at all, just grow up
-                const lastNode = tree[tree.length-1];
-                tree.push(new TreeNode(lastNode, lastNode.pos.plus(lastNode.dir.times(BRANCH_LENGTH)), lastNode.dir, lastNode.width*0.98));
+        // function updateAndRender() {
+        //     if (attractionPoints.length === 0 || tree.length > 1500) {
+        //         return;
+        //     }
 
-            } else {
-                // grow according to attractions
-                for (let inflNode of influencedNodes) {
+        //     let influencedNodes = tree.map(node => ({node: node, attrs: []}));
 
-                    // ignore those tree nodes that have no attraction
-                    if (inflNode.attrs.length === 0) {
-                        continue;
-                    }
+        //     // find closest node to each attraction point
+        //     let found = false;
+        //     for (let apoint of attractionPoints) {
 
-                    // attraction points whose closest node is the current one
-                    let attrs = influencedNodes.find((n) => n.node === inflNode.node).attrs;
+        //         let closest = null;
+        //         let closestDist = Number.MAX_SAFE_INTEGER;
+        //         for (let treeNode of tree) {
+        //             let dist = treeNode.pos.minus(apoint).length();
+        //             if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
+        //                 closest = treeNode;
+        //                 closestDist = dist;
+        //             }
+        //         }
 
-                    // sum up all attrpoint-node directions
-                    let sumVect = new Vec2(0, 0);
-                    for (let apoint of attrs) {
-                        sumVect.add(apoint.minus(inflNode.node.pos));
-                    }
-                    sumVect.normalize();
-                    // also include the previous direction
-                    sumVect.add(inflNode.node.dir.times(1.2));
-                    sumVect.normalize();
-                    sumVect.mul(BRANCH_LENGTH);
+        //         if (closest !== null) {
+        //             found = true;
+        //             let t = influencedNodes.find((n) => n.node === closest);
+        //             t.attrs.push(apoint);
+        //         }
+        //     }
 
-                    // add node
-                    tree.push(new TreeNode(inflNode.node, inflNode.node.pos.plus(sumVect), sumVect, inflNode.node.width*0.98));
-                }
-            }
+        //     // grow tree
+        //     if (!found) {
+        //         // no attraction at all, just grow up
+        //         const lastNode = tree[tree.length-1];
+        //         tree.push(new TreeNode(lastNode, lastNode.pos.plus(lastNode.dir.times(BRANCH_LENGTH)), lastNode.dir, lastNode.width*0.98));
 
-            // remove consumed points
-            attractionPoints = attractionPoints.filter((e) => {
-                let closestDist = Number.MAX_SAFE_INTEGER;
-                for (let treeNode of tree) {
-                    let dist = treeNode.pos.minus(e).length();
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                    }
-                }
-                return closestDist >= INFL_MIN_DIST;
-            });
+        //     } else {
+        //         // grow according to attractions
+        //         for (let inflNode of influencedNodes) {
 
-            // clear screen
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        //             // ignore those tree nodes that have no attraction
+        //             if (inflNode.attrs.length === 0) {
+        //                 continue;
+        //             }
 
-            // draw tree
-            for (let n of tree) {
-                // let n = tree[tree.length-1];
-                if (n.parent !== null) {
-                    ctx.fillStyle = "#FF0000";
-                    ctx.lineWidth = n.width;
-                    ctx.beginPath();
-                    ctx.moveTo(n.pos.x, n.pos.y);
-                    ctx.lineTo(n.parent.pos.x, n.parent.pos.y);
-                    ctx.stroke();
-                }
-            }
+        //             // attraction points whose closest node is the current one
+        //             let attrs = influencedNodes.find((n) => n.node === inflNode.node).attrs;
 
-            // draw attraction points
-            for (let point of attractionPoints) {
-                ctx.fillStyle = "#0000FF44";
-                ctx.fillRect(point.x-2, point.y-2, 4, 4);
-            }
+        //             // sum up all attrpoint-node directions
+        //             let sumVect = new Vec3(0, 0, 0);
+        //             for (let apoint of attrs) {
+        //                 sumVect.add(apoint.minus(inflNode.node.pos));
+        //             }
+        //             sumVect.normalize();
+        //             // also include the previous direction
+        //             sumVect.add(inflNode.node.dir.times(1.2));
+        //             sumVect.normalize();
+        //             sumVect.mul(BRANCH_LENGTH);
 
-            setTimeout(updateAndRender, 1);
-        }
-        updateAndRender();
+        //             // add node
+        //             tree.push(new TreeNode(inflNode.node, inflNode.node.pos.plus(sumVect), sumVect, inflNode.node.width*0.98));
+        //         }
+        //     }
+
+        //     // remove consumed points
+        //     removeReachedAttractionPoints();
+
+        //     // clear screen
+        //     // render();
+
+        //     setTimeout(updateAndRender, 1);
+        // }
+
+        // setup();
+        // updateAndRender();
 
     </script>
+
 </body>
 
 </html>

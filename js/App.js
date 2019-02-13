@@ -20,6 +20,7 @@ class App {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.gl.enable(this.gl.DEPTH_TEST);
     }
     registerEventHandlers() {
         document.onkeydown = (event) => {
