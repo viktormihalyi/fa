@@ -6,16 +6,16 @@ function randomBetween(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
 
-const ATTRACTION_POINT_COUNT = 150;
+const ATTRACTION_POINT_COUNT = 250;
 
-const CIRCLE_CENTER = new Vec3(0, 0, 0);
+const CIRCLE_CENTER = new Vec3(0, 10, 0);
 const CIRCLE_RADIUS = 33;
 
-const INFL_MIN_DIST = 10;
+const INFL_MIN_DIST = 3;
 const INFL_MAX_DIST = 33;
 
-const BRANCH_LENGTH = 5;
-const TREE_START_POS = new Vec3(0, -50, 0);
+const BRANCH_LENGTH = 0.5;
+const TREE_START_POS = new Vec3(0, -33, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
 class TreeNode {
@@ -33,7 +33,7 @@ class TreeNode {
 class Tree {
     constructor() {
         this.nodes = [];
-        this.nodes.push(new TreeNode(null, TREE_START_POS, INITIAL_DIRECTION, 10));
+        this.nodes.push(new TreeNode(null, TREE_START_POS, INITIAL_DIRECTION, 10, new Vec3(0, 0, 1)));
 
         this.attractionPoints = [];
         while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
@@ -66,7 +66,9 @@ class Tree {
     }
 
     growFrom(source, direction) {
-        const newNode = new TreeNode(source, source.pos.plus(direction.times(BRANCH_LENGTH)), direction, source.width*0.98);
+        const acceleration_vector = direction.minus(source.dir).normalize();
+        const principal_normal = direction.cross(acceleration_vector).cross(direction).normalize();
+        const newNode = new TreeNode(source, source.pos.plus(direction.times(BRANCH_LENGTH)), direction, source.width*0.98, principal_normal);
         source.children.push(newNode);
         this.nodes.push(newNode);
     }

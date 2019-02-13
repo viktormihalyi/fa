@@ -37,8 +37,9 @@ class Scene {
 
         // render
         this.solidProgram.commit();
-        this.camera.eyePos.x = 52*Math.sin(t/4);
-        this.camera.eyePos.z = 52*Math.cos(t/4);
+        this.camera.eyePos.x = 22*Math.sin(t/40);
+        this.camera.eyePos.y = this.camera.target.y = 0;
+        this.camera.eyePos.z = 22*Math.cos(t/40);
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 

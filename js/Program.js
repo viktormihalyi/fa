@@ -8,7 +8,7 @@ class Program {
         gl.attachShader(this.glProgram, fragmentShader.glShader);
 
         gl.bindAttribLocation(this.glProgram, 0, 'vertexPosition');
-        gl.bindAttribLocation(this.glProgram, 1, 'vertexNormal');
+        gl.bindAttribLocation(this.glProgram, 1, 'vertexColor');
         gl.bindAttribLocation(this.glProgram, 2, 'vertexTexCoord');
         gl.bindAttribLocation(this.glProgram, 3, 'vertexOffset');
 

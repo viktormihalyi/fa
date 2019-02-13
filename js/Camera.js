@@ -5,7 +5,7 @@ class Camera {
         this.fov = 90 * Math.PI / 180.0;
         this.asp = window.innerWidth/window.innerHeight;
 
-        this.eyePos = new Vec3(-65, 0, 0);
+        this.eyePos = new Vec3(-33, 0, 0);
         this.target = new Vec3(0, 0, 0);
         this.up     = new Vec3(0, 1, 0);
     }
