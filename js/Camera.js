@@ -1,3 +1,5 @@
+"use strict";
+
 class Camera {
     constructor() {
         this.fov = 90 * Math.PI / 180.0;
