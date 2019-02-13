@@ -63,13 +63,13 @@ class App {
     }
 }
 
-
+let app;
 // entry point from HTML
 window.addEventListener('load', function () {
     const canvas = document.getElementById("canvas");
     const overlay = document.getElementById("overlay");
     overlay.innerHTML = "WebGL";
 
-    const app = new App(canvas, overlay);
+    app = new App(canvas, overlay);
     app.registerEventHandlers();
 });

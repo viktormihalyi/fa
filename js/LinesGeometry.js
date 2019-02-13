@@ -32,12 +32,13 @@ class LinesGeometry {
 
         // vertex vbo
         const o = 18;
-        this.lineCount = (tree.length - 1)*o/3;
+        this.lineCount = (tree.length - 1) * o / 3;
+        this.lineCount *= 4;
         const f = new Float32Array(this.lineCount * o);
         const c = new Float32Array(this.lineCount * o);
         c.fill(0);
         for (let i = 0; i < tree.length; i++) {
-            const node = tree[i]
+            const node = tree[i];
             if (node.parent !== null) {
 
                 // f[i*o+0] = node.pos.x;
@@ -51,12 +52,12 @@ class LinesGeometry {
                 f[i*o+0] = node.pos.x;
                 f[i*o+1] = node.pos.y;
                 f[i*o+2] = node.pos.z;
-                c[i*o+0] = 1;
+                // c[i*o+0] = 1;
 
                 f[i*o+3] = node.pos.x + node.dir.x;
                 f[i*o+4] = node.pos.y + node.dir.y;
                 f[i*o+5] = node.pos.z + node.dir.z;
-                c[i*o+3] = 1;
+                // c[i*o+3] = 1;
 
                 f[i*o+6] = node.pos.x;
                 f[i*o+7] = node.pos.y;
@@ -72,12 +73,12 @@ class LinesGeometry {
                 f[i*o+12] = node.pos.x;
                 f[i*o+13] = node.pos.y;
                 f[i*o+14] = node.pos.z;
-                c[i*o+14] = 1;
+                c[i*o+12] = 1;
 
                 f[i*o+15] = node.pos.x + binormal.x;
                 f[i*o+16] = node.pos.y + binormal.y;
                 f[i*o+17] = node.pos.z + binormal.z;
-                c[i*o+17] = 1;
+                c[i*o+15] = 1;
 
             }
         }

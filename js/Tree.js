@@ -8,15 +8,17 @@ function randomBetween(min, max) {
 
 const ATTRACTION_POINT_COUNT = 250;
 
-const CIRCLE_CENTER = new Vec3(0, 10, 0);
-const CIRCLE_RADIUS = 33;
+const CIRCLE_CENTER = new Vec3(0, 100, 0);
+const CIRCLE_RADIUS = 100;
 
-const INFL_MIN_DIST = 3;
-const INFL_MAX_DIST = 33;
+const INFL_MIN_DIST = 16;
+const INFL_MAX_DIST = 50;
 
-const BRANCH_LENGTH = 0.5;
-const TREE_START_POS = new Vec3(0, -33, 0);
+const BRANCH_LENGTH = 8;
+const TREE_START_POS = new Vec3(0, -20, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
+
+const MAX_TREE_SIZE = 2500;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -48,6 +50,40 @@ class Tree {
         }
     }
 
+    lel() {
+        for (let node of this.nodes) {
+            for (let child of node.children) {
+
+                for (let grandchild of child.children) {
+
+                    let first = null;
+                    let last = null;
+                    for (let t = 0; t < 1; t += 0.1) {
+                        const prev = node.parent || node;
+
+                        const interpolated_pos    = catmull_rom_spline(prev.pos,    node.pos,    child.pos,    grandchild.pos,    t);
+                        const interpolated_dir    = catmull_rom_spline(prev.dir,    node.dir,    child.dir,    grandchild.dir,    t);
+                        const interpolated_normal = catmull_rom_spline(prev.normal, node.normal, child.normal, grandchild.normal, t);
+
+                        const newNode = new TreeNode(node, interpolated_pos, interpolated_dir, lerp(node.width, child.width, t), interpolated_normal);
+                        last = newNode;
+                        node.children.push(newNode);
+                        this.nodes.push(newNode);
+
+                        if (first === null) {
+                            first = newNode;
+
+                            let index = node.children.indexOf(child);
+                            node.children.splice(index, 1);
+                        }
+                    }
+
+                    child.parent = last;
+                }
+            }
+        }
+    }
+
     good_point(pos) {
         return pos.minus(CIRCLE_CENTER).length() < CIRCLE_RADIUS;
     }
@@ -66,15 +102,17 @@ class Tree {
     }
 
     growFrom(source, direction) {
+        // https://solitaryroad.com/c253.html
+        // modelling the mighty maple
         const acceleration_vector = direction.minus(source.dir).normalize();
-        const principal_normal = direction.cross(acceleration_vector).cross(direction).normalize();
+        const principal_normal = direction.cross(acceleration_vector).cross(direction);
         const newNode = new TreeNode(source, source.pos.plus(direction.times(BRANCH_LENGTH)), direction, source.width*0.98, principal_normal);
         source.children.push(newNode);
         this.nodes.push(newNode);
     }
 
     grow() {
-        if (this.attractionPoints.length === 0 || this.nodes.length > 1500) {
+        if (this.attractionPoints.length === 0 || this.nodes.length >= MAX_TREE_SIZE) {
             return;
         }
 
@@ -130,7 +168,7 @@ class Tree {
                 }
                 sumVect.normalize();
                 // also include the previous direction
-                sumVect.add(inflNode.node.dir.times(1.2));
+                sumVect.add(inflNode.node.dir.times(2));
                 sumVect.normalize();
 
                 // add node
