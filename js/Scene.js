@@ -4,8 +4,12 @@ function lerp(a, b, t) {
     return a * (1 - t) + b * t;
 }
 
+// https://en.wikipedia.org/wiki/File:Catmull-Rom_Parameterized_Time.png
+// centripetal: alpha = 0.5
+// uniform:     alpha = 0
+// chordal:     alpha = 1
 const ALPHA = 1;
-const EPSILON = 1e-5;
+const EPSILON = 1e-2;
 
 function tj(ti, pi, pj) {
     let len = Math.max(EPSILON, pj.minus(pi).length());
@@ -59,6 +63,8 @@ class Scene {
             console.log(pv(point));
         }
 
+        this.BG_COLOR = new Vec3(1, 1, 1);
+
     }
 
     update(gl, keysPressed) {
@@ -74,18 +80,44 @@ class Scene {
         this.last_tree_count = this.tree.nodes.length;
 
         // clear the screen
-        gl.clearColor(1, 1, 1, 1.0);
+        gl.clearColor(this.BG_COLOR.x, this.BG_COLOR.y, this.BG_COLOR.z, 1);
         // gl.clearColor(0.8, 0.902, 0.902, 1.0);
         gl.clearDepth(1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // render
         this.solidProgram.commit();
+
         if (!keysPressed['SPACE']) {
-            this.camera.eyePos.x = 55*Math.sin(t/1);
-            this.camera.eyePos.y = this.camera.target.y = 33;
-            this.camera.eyePos.z = 55*Math.cos(t/1);
+            this.camera.eyePos.x = 200*Math.sin(t/1);
+            this.camera.target = new Vec3(0, 0, 0);
+            this.camera.eyePos.y = this.camera.target.y = 150;
+            this.camera.eyePos.z = 200*Math.cos(t/1);
+        } else {
+
+            const camera_speed = 5;
+            const lookat = this.camera.target.minus(this.camera.eyePos).normalize();
+            if (keysPressed['W']) {
+                this.camera.eyePos.add(lookat.times(camera_speed));
+                this.camera.target = this.camera.eyePos.plus(lookat);
+            }
+            if (keysPressed['S']) {
+                this.camera.eyePos.sub(lookat.times(camera_speed));
+                this.camera.target = this.camera.eyePos.plus(lookat);
+            }
+            if (keysPressed['A']) {
+                const left = lookat.cross(this.camera.up).normalize();
+                this.camera.eyePos.sub(left.times(camera_speed));
+                this.camera.target = this.camera.eyePos.plus(lookat);
+            }
+            if (keysPressed['D']) {
+                const left = lookat.cross(this.camera.up).normalize();
+                this.camera.eyePos.add(left.times(camera_speed));
+                this.camera.target = this.camera.eyePos.plus(lookat);
+            }
+
         }
+
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 

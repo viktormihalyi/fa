@@ -1,6 +1,6 @@
 "use strict";
 
-Math.seedrandom(2314);
+// Math.seedrandom(2314);
 
 function randomBetween(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min);
@@ -8,17 +8,20 @@ function randomBetween(min, max) {
 
 const ATTRACTION_POINT_COUNT = 100;
 
-const CIRCLE_CENTER = new Vec3(0, 100, 0);
-const CIRCLE_RADIUS = 100;
+const CIRCLE_CENTER = new Vec3(0, 200, 0);
+const CIRCLE_RADIUS = 150;
 
-const INFL_MIN_DIST = 20;
-const INFL_MAX_DIST = 60;
+const INFL_MIN_DIST = 12;
+const INFL_MAX_DIST = 120;
 
-const BRANCH_LENGTH = 15;
-const TREE_START_POS = new Vec3(0, -20, 0);
+const BRANCH_LENGTH = 5;
+const TREE_START_POS = new Vec3(0, 0, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
-const MAX_TREE_SIZE = 100;
+const MAX_TREE_SIZE = 600;
+
+const PREVIOUS_DIR_POWER = 0.9;
+const BRANCH_WIDTH_SCALE = 0.95;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -72,7 +75,9 @@ class Tree {
         }
     }
 
-    between(node, nodes_child, t) {
+    // return a new node
+    // parent is null
+    interpolate_node_between(node, nodes_child, t) {
         const prev = node.parent || node;
         const grandchild = nodes_child.getDominantChild() || nodes_child;
 
@@ -84,30 +89,12 @@ class Tree {
     }
 
 
-    try() {
-
-        const mennyit = 10;
-        for (let node of this.nodes) {
-            console.log('from', pv(node.pos));
-            for (let i = 0; i < node.children.length; i++) {
-                const child = node.children[i];
-                console.log('  to', pv(child.pos));
-
-                for (let j = 1; j <= mennyit; j++) {
-                    const t = j / (mennyit + 1);
-
-                    const newNode = this.between(node, child, t);
-                    console.log(pv(newNode.pos));
-                }
-
-            }
-            console.log('e');
-        }
-    }
-
     lel() {
-        const mennyit = 10;
+        const mennyit = 2;
 
+        // setting parents is fine during the iteration
+        // but setting children will result in an infinite loop
+        // so they are saved here, and will be set after the loops
         let newNodes = [];
         let newChildParents = [];
 
@@ -126,7 +113,7 @@ class Tree {
                 for (let j = 1; j <= mennyit; j++) {
                     const t = j / (mennyit + 1);
 
-                    const newNode = this.between(node, child, t);
+                    const newNode = this.interpolate_node_between(node, child, t);
                     newNode.parent = last;
 
                     newChildParents.push({
@@ -173,10 +160,14 @@ class Tree {
 
     growFrom(source, direction) {
         // https://solitaryroad.com/c253.html
-        // modelling the mighty maple
         const acceleration_vector = direction.minus(source.dir).normalize();
         const principal_normal = direction.cross(acceleration_vector).cross(direction);
-        const newNode = new TreeNode(source, source.pos.plus(direction.times(BRANCH_LENGTH)), direction, source.width*0.98, principal_normal);
+        const newNode = new TreeNode(
+            source,
+            source.pos.plus(direction.times(BRANCH_LENGTH)),
+            direction,
+            source.width*BRANCH_WIDTH_SCALE,
+            principal_normal);
         source.children.push(newNode);
         this.nodes.push(newNode);
     }
@@ -238,7 +229,7 @@ class Tree {
                 }
                 sumVect.normalize();
                 // also include the previous direction
-                sumVect.add(inflNode.node.dir.times(2));
+                sumVect.add(inflNode.node.dir.times(PREVIOUS_DIR_POWER));
                 sumVect.normalize();
 
                 // add node

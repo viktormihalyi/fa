@@ -30,55 +30,75 @@ class LinesGeometry {
         console.log('updating points');
         const gl = this.gl;
 
-        // vertex vbo
-        const o = 18;
+        const debug = false;
+
+        // https://math.stackexchange.com/questions/73237/parametric-equation-of-a-circle-in-3d-space/73242#73242
+        const circle = (theta, r, center, a, b) => new Vec3(
+            Math.cos(theta)*a.x + Math.sin(theta)*b.x,
+            Math.cos(theta)*a.y + Math.sin(theta)*b.y,
+            Math.cos(theta)*a.z + Math.sin(theta)*b.z,
+        ).times(r).add(center);
+
+        const circ = 6;
+        const o = debug ? 18 : 6;
         this.lineCount = (tree.length - 1) * o / 3;
-        this.lineCount *= 4;
+        this.lineCount *= debug ? 4 : 1*circ;
+
         const f = new Float32Array(this.lineCount * o);
         const c = new Float32Array(this.lineCount * o);
+        let lc = 0;
         c.fill(0);
         for (let i = 0; i < tree.length; i++) {
             const node = tree[i];
             if (node.parent !== null) {
+                const binormal = node.normal.cross(node.dir).normalize();
 
-                // f[i*o+0] = node.pos.x;
-                // f[i*o+1] = node.pos.y;
-                // f[i*o+2] = node.pos.z;
+                if (!debug) {
+                    for (let t = 0; t < 2*Math.PI; t += Math.PI/circ) {
+                        const p1 = circle(t,              node.width, node.pos, binormal, node.normal);
+                        const p2 = circle(t+Math.PI/circ, node.width, node.pos, binormal, node.normal);
 
-                // f[i*o+3] = node.parent.pos.x;
-                // f[i*o+4] = node.parent.pos.y;
-                // f[i*o+5] = node.parent.pos.z;
+                        f[lc++] = p1.x;
+                        f[lc++] = p1.y;
+                        f[lc++] = p1.z;
 
-                f[i*o+0] = node.pos.x;
-                f[i*o+1] = node.pos.y;
-                f[i*o+2] = node.pos.z;
-                // c[i*o+0] = 1;
+                        f[lc++] = p2.x;
+                        f[lc++] = p2.y;
+                        f[lc++] = p2.z;
+                    }
 
-                f[i*o+3] = node.pos.x + node.dir.x;
-                f[i*o+4] = node.pos.y + node.dir.y;
-                f[i*o+5] = node.pos.z + node.dir.z;
-                // c[i*o+3] = 1;
+                } else {
+                    f[i*o+0] = node.pos.x;
+                    f[i*o+1] = node.pos.y;
+                    f[i*o+2] = node.pos.z;
+                    // c[i*o+0] = 1;
 
-                f[i*o+6] = node.pos.x;
-                f[i*o+7] = node.pos.y;
-                f[i*o+8] = node.pos.z;
-                c[i*o+7] = 1;
+                    f[i*o+3] = node.pos.x + node.dir.x;
+                    f[i*o+4] = node.pos.y + node.dir.y;
+                    f[i*o+5] = node.pos.z + node.dir.z;
+                    // c[i*o+3] = 1;
 
-                f[i*o+9] = node.pos.x + node.normal.x;
-                f[i*o+10] = node.pos.y + node.normal.y;
-                f[i*o+11] = node.pos.z + node.normal.z;
-                c[i*o+10] = 1;
+                    f[i*o+6] = node.pos.x;
+                    f[i*o+7] = node.pos.y;
+                    f[i*o+8] = node.pos.z;
+                    c[i*o+7] = 1;
 
-                const binormal = node.dir.cross(node.normal);
-                f[i*o+12] = node.pos.x;
-                f[i*o+13] = node.pos.y;
-                f[i*o+14] = node.pos.z;
-                c[i*o+12] = 1;
+                    f[i*o+9] = node.pos.x + node.normal.x;
+                    f[i*o+10] = node.pos.y + node.normal.y;
+                    f[i*o+11] = node.pos.z + node.normal.z;
+                    c[i*o+10] = 1;
 
-                f[i*o+15] = node.pos.x + binormal.x;
-                f[i*o+16] = node.pos.y + binormal.y;
-                f[i*o+17] = node.pos.z + binormal.z;
-                c[i*o+15] = 1;
+                    const binormal = node.dir.cross(node.normal);
+                    f[i*o+12] = node.pos.x;
+                    f[i*o+13] = node.pos.y;
+                    f[i*o+14] = node.pos.z;
+                    c[i*o+12] = 1;
+
+                    f[i*o+15] = node.pos.x + binormal.x;
+                    f[i*o+16] = node.pos.y + binormal.y;
+                    f[i*o+17] = node.pos.z + binormal.z;
+                    c[i*o+15] = 1;
+                }
 
             }
         }
