@@ -1,24 +1,24 @@
 "use strict";
 
-Math.seedrandom(0);
+Math.seedrandom(2314);
 
 function randomBetween(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
 
-const ATTRACTION_POINT_COUNT = 250;
+const ATTRACTION_POINT_COUNT = 100;
 
 const CIRCLE_CENTER = new Vec3(0, 100, 0);
 const CIRCLE_RADIUS = 100;
 
-const INFL_MIN_DIST = 16;
-const INFL_MAX_DIST = 50;
+const INFL_MIN_DIST = 20;
+const INFL_MAX_DIST = 60;
 
-const BRANCH_LENGTH = 8;
+const BRANCH_LENGTH = 15;
 const TREE_START_POS = new Vec3(0, -20, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
-const MAX_TREE_SIZE = 2500;
+const MAX_TREE_SIZE = 100;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -27,15 +27,37 @@ class TreeNode {
         this.dir = dir.clone().normalize();
         this.width = width;
         this.children = [];
-        this.normal = normal;
+        this.normal = normal.clone().normalize();
+    }
+
+    getDominantChild() {
+        let dominantChild = null;
+        let smallestAngle = Number.MAX_SAFE_INTEGER;
+        for (let child of this.children) {
+            const angle = this.dir.dot(child.dir);
+            if (angle < smallestAngle) {
+                smallestAngle = angle;
+                dominantChild = child;
+            }
+        }
+        return dominantChild;
     }
 }
 
+function round(x) {
+    return Math.round(x*10)/10;
+}
+
+function pv(vec) {
+    return `(${round(vec.x)}, ${round(vec.y)}, ${round(vec.z)})`
+}
 
 class Tree {
     constructor() {
         this.nodes = [];
         this.nodes.push(new TreeNode(null, TREE_START_POS, INITIAL_DIRECTION, 10, new Vec3(0, 0, 1)));
+        // this.growFrom(this.nodes[this.nodes.length-1], new Vec3(0, 10, 1).normalize());
+        // this.growFrom(this.nodes[this.nodes.length-1], new Vec3(0, 10, 5).normalize());
 
         this.attractionPoints = [];
         while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
@@ -50,38 +72,86 @@ class Tree {
         }
     }
 
-    lel() {
+    between(node, nodes_child, t) {
+        const prev = node.parent || node;
+        const grandchild = nodes_child.getDominantChild() || nodes_child;
+
+        const interpolated_pos    = catmull_rom_spline(prev.pos,    node.pos,    nodes_child.pos,    grandchild.pos,    t);
+        const interpolated_dir    = catmull_rom_spline(prev.dir,    node.dir,    nodes_child.dir,    grandchild.dir,    t);
+        const interpolated_normal = catmull_rom_spline(prev.normal, node.normal, nodes_child.normal, grandchild.normal, t);
+
+        return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(node.width, nodes_child.width, t), interpolated_normal);
+    }
+
+
+    try() {
+
+        const mennyit = 10;
         for (let node of this.nodes) {
-            for (let child of node.children) {
+            console.log('from', pv(node.pos));
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
+                console.log('  to', pv(child.pos));
 
-                for (let grandchild of child.children) {
+                for (let j = 1; j <= mennyit; j++) {
+                    const t = j / (mennyit + 1);
 
-                    let first = null;
-                    let last = null;
-                    for (let t = 0; t < 1; t += 0.1) {
-                        const prev = node.parent || node;
-
-                        const interpolated_pos    = catmull_rom_spline(prev.pos,    node.pos,    child.pos,    grandchild.pos,    t);
-                        const interpolated_dir    = catmull_rom_spline(prev.dir,    node.dir,    child.dir,    grandchild.dir,    t);
-                        const interpolated_normal = catmull_rom_spline(prev.normal, node.normal, child.normal, grandchild.normal, t);
-
-                        const newNode = new TreeNode(node, interpolated_pos, interpolated_dir, lerp(node.width, child.width, t), interpolated_normal);
-                        last = newNode;
-                        node.children.push(newNode);
-                        this.nodes.push(newNode);
-
-                        if (first === null) {
-                            first = newNode;
-
-                            let index = node.children.indexOf(child);
-                            node.children.splice(index, 1);
-                        }
-                    }
-
-                    child.parent = last;
+                    const newNode = this.between(node, child, t);
+                    console.log(pv(newNode.pos));
                 }
+
+            }
+            console.log('e');
+        }
+    }
+
+    lel() {
+        const mennyit = 10;
+
+        let newNodes = [];
+        let newChildParents = [];
+
+        for (let node of this.nodes) {
+
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
+
+                let last = node;
+                let first = true;
+
+                if (node.parent) {
+                    console.log('choose actual parent');
+                }
+
+                for (let j = 1; j <= mennyit; j++) {
+                    const t = j / (mennyit + 1);
+
+                    const newNode = this.between(node, child, t);
+                    newNode.parent = last;
+
+                    newChildParents.push({
+                        child: newNode,
+                        parent: last
+                    })
+                    last = newNode;
+                    newNodes.push(newNode);
+
+
+                    if (first) {
+                        first = false;
+                        node.children[i] = newNode;
+                    }
+                }
+
+                last.children.push(child);
+                child.parent = last;
             }
         }
+
+        for (let rel of newChildParents) {
+            rel.parent.children.push(rel.child);
+        }
+        this.nodes.push(...newNodes);
     }
 
     good_point(pos) {

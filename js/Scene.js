@@ -1,46 +1,38 @@
 "use strict";
 
-// https://en.wikipedia.org/wiki/Cubic_Hermite_spline
-// p0: starting point
-// p1: ending point
-// m0: starting tangent
-// m1: ending tangent
-function cubic_hermit_spline(p0, p1, m0, m1, t) {
-    const t2 = t*t;
-    const t3 = t2*t;
-
-    const a = 2*t3 - 3*t2 + 1;
-    const b = t3 - 2*t2 + t;
-    const c = -2*t3 + 3*t2;
-    const d = t3 - t3;
-
-    return p0.times(a).plus(m0.times(b)).plus(p1.times(c)).plus(m1.times(d));
-}
-
 function lerp(a, b, t) {
     return a * (1 - t) + b * t;
 }
 
-// https://en.wikipedia.org/wiki/Cubic_Hermite_spline
-// pp: previous point before starting point (when null, pp = p0)
-// p0: starting point
-// p1: ending point
-// pn: next point after ending point (when null, pn = p1)
-function catmull_rom_spline(pp, p0, p1, pn, t) {
-    const m0 = p1.minus(pp || p0).times(0.5);
-    const m1 = (pn || p1).minus(p0).times(0.5);
-    return cubic_hermit_spline(p0, p1, m0, m1, t);
+const ALPHA = 1;
+const EPSILON = 1e-5;
+
+function tj(ti, pi, pj) {
+    let len = Math.max(EPSILON, pj.minus(pi).length());
+    return Math.pow(len, ALPHA) + ti;
 }
 
-let p0 = new Vec2(0, 0);
-let p1 = new Vec2(5, 5);
-let pp = new Vec2(2, -3);
-let pn = new Vec2(10, 2);
+// https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
+// centripetal catmull rom spline
+function catmull_rom_spline(p0, p1, p2, p3, t) {
+    const t0 = 0;
+    const t1 = tj(t0, p0, p1);
+    const t2 = tj(t1, p1, p2);
+    const t3 = tj(t2, p2, p3);
 
-for (let t = 0; t <= 1; t += 0.01) {
-    const point = catmull_rom_spline(pp, p0, p1, pn, t);
-    console.log(`x=${point.x}, y=${point.y}`);
+    t = lerp(t1, t2, t);
+
+    const a1 = p0.times((t1-t) / (t1-t0)).plus(p1.times((t-t0) / (t1-t0)));
+    const a2 = p1.times((t2-t) / (t2-t1)).plus(p2.times((t-t1) / (t2-t1)));
+    const a3 = p2.times((t3-t) / (t3-t2)).plus(p3.times((t-t2) / (t3-t2)));
+
+    const b1 = a1.times((t2-t) / (t2-t0)).plus(a2.times((t-t0) / (t2-t0)));
+    const b2 = a2.times((t3-t) / (t3-t1)).plus(a3.times((t-t1) / (t3-t1)));
+
+    const c  = b1.times((t2-t) / (t2-t1)).plus(b2.times((t-t1) / (t2-t1)));
+    return c;
 }
+
 
 class Scene {
     constructor(gl) {
@@ -56,6 +48,17 @@ class Scene {
         this.linesGeometry = new LinesGeometry(gl);
 
         this.last_tree_count = this.tree.nodes.length;
+
+        let pp = new Vec3(-2, -3, 0);
+        let p0 = new Vec3(0, 0, 0);
+        let p1 = new Vec3(5, 5, 0);
+        let pn = new Vec3(7, 0, 0);
+
+        for (let t = 0; t <= 1; t += 0.2) {
+            const point = catmull_rom_spline(pp, p0, p1, pn, t);
+            console.log(pv(point));
+        }
+
     }
 
     update(gl, keysPressed) {
@@ -78,9 +81,11 @@ class Scene {
 
         // render
         this.solidProgram.commit();
-        this.camera.eyePos.x = 55*Math.sin(t/40);
-        this.camera.eyePos.y = this.camera.target.y = 33;
-        this.camera.eyePos.z = 55*Math.cos(t/40);
+        if (!keysPressed['SPACE']) {
+            this.camera.eyePos.x = 55*Math.sin(t/1);
+            this.camera.eyePos.y = this.camera.target.y = 33;
+            this.camera.eyePos.z = 55*Math.cos(t/1);
+        }
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 
