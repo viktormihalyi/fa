@@ -1,6 +1,6 @@
 "use strict";
 
-// Math.seedrandom(2314);
+Math.seedrandom(7);
 
 function randomBetween(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min);
@@ -11,17 +11,17 @@ const ATTRACTION_POINT_COUNT = 100;
 const CIRCLE_CENTER = new Vec3(0, 200, 0);
 const CIRCLE_RADIUS = 150;
 
-const INFL_MIN_DIST = 12;
-const INFL_MAX_DIST = 120;
+const INFL_MIN_DIST = 12*2;
+const INFL_MAX_DIST = 60*2;
 
-const BRANCH_LENGTH = 5;
+const BRANCH_LENGTH = 5*2;
 const TREE_START_POS = new Vec3(0, 0, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
 const MAX_TREE_SIZE = 600;
 
 const PREVIOUS_DIR_POWER = 0.9;
-const BRANCH_WIDTH_SCALE = 0.95;
+const BRANCH_WIDTH_SCALE = 0.92;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {

@@ -1,7 +1,7 @@
 "use strict";
 class LinesGeometry {
     constructor(gl) {
-        this.lineCount = 0;
+        this.connection_count = 0;
 
         this.gl = gl;
 
@@ -39,24 +39,39 @@ class LinesGeometry {
             Math.cos(theta)*a.z + Math.sin(theta)*b.z,
         ).times(r).add(center);
 
+        // circle resolution
+        // each circle will be made of this many vertices
         const circ = 6;
-        const o = debug ? 18 : 6;
-        this.lineCount = (tree.length - 1) * o / 3;
-        this.lineCount *= debug ? 4 : 1*circ;
 
-        const f = new Float32Array(this.lineCount * o);
-        const c = new Float32Array(this.lineCount * o);
-        let lc = 0;
+        // number of vertices generated for each node
+        const o = debug ? 18 : 6;
+
+        // first node doesnt have a parent
+        this.connection_count = tree.length * circ;
+
+        const array_len = this.connection_count * 6;
+
+        const f = new Float32Array(array_len);
+        const c = new Float32Array(array_len);
         c.fill(0);
+
+        console.log('tree lengt', tree.length);
+        console.log('conn count', this.connection_count);
+        console.log('allocating', array_len);
+
+        let lc = 0;
+
         for (let i = 0; i < tree.length; i++) {
             const node = tree[i];
-            if (node.parent !== null) {
+            if (true || node.parent !== null) {
                 const binormal = node.normal.cross(node.dir).normalize();
 
                 if (!debug) {
-                    for (let t = 0; t < 2*Math.PI; t += Math.PI/circ) {
-                        const p1 = circle(t,              node.width, node.pos, binormal, node.normal);
-                        const p2 = circle(t+Math.PI/circ, node.width, node.pos, binormal, node.normal);
+                    const step = 2*Math.PI/circ;
+
+                    for (let j = 0; j < circ; j++) {
+                        const p1 = circle(step*(j),   node.width, node.pos, binormal, node.normal);
+                        const p2 = circle(step*(j+1), node.width, node.pos, binormal, node.normal);
 
                         f[lc++] = p1.x;
                         f[lc++] = p1.y;
@@ -88,7 +103,6 @@ class LinesGeometry {
                     f[i*o+11] = node.pos.z + node.normal.z;
                     c[i*o+10] = 1;
 
-                    const binormal = node.dir.cross(node.normal);
                     f[i*o+12] = node.pos.x;
                     f[i*o+13] = node.pos.y;
                     f[i*o+14] = node.pos.z;
@@ -102,6 +116,8 @@ class LinesGeometry {
 
             }
         }
+        console.log(lc);
+
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, f, gl.DYNAMIC_DRAW);
@@ -130,7 +146,7 @@ class LinesGeometry {
         gl.bindVertexArray(this.vao);
         // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         // gl.drawElements(gl.LINES, this.lineCount, gl.UNSIGNED_SHORT, 0);
-        gl.drawArrays(gl.LINES, this.vertexBuffer, this.lineCount);
+        gl.drawArrays(gl.LINES, this.vertexBuffer, this.connection_count*2);
     }
 }
 
