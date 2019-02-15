@@ -2,6 +2,8 @@
 
 const VEC_LENGTH = 3;
 
+// TODO not all lines show up??
+
 class FrenetGeometry {
     constructor(gl) {
         this.connection_count = 0;
@@ -33,16 +35,14 @@ class FrenetGeometry {
         this.lineCount = tree.length * 3;
 
         const array_len = this.lineCount * 6;
-        const vertexBuffer = new Float32Array(array_len);
-        const colorBuffer = new Float32Array(array_len);
+        const vertexB = new Float32Array(array_len);
+        const colorB = new Float32Array(array_len);
 
-        colorBuffer.fill(0);
+        colorB.fill(0);
 
         let iter = 0;
 
-        for (let i = 0; i < tree.length; i++) {
-            const node = tree[i];
-
+        for (let node of tree) {
             const dir = node.dir.times(VEC_LENGTH);
             const normal = node.normal.times(VEC_LENGTH);
             const binormal = normal.cross(dir).normalize().times(VEC_LENGTH);
@@ -51,51 +51,56 @@ class FrenetGeometry {
             // green - principal normal
             // blue  - tangent (dir)
 
-            vertexBuffer[iter++] = node.pos.x;
-            vertexBuffer[iter++] = node.pos.y;
-            colorBuffer[iter] = 1;
-            vertexBuffer[iter++] = node.pos.z;
+            vertexB[iter++] = node.pos.x;
+            vertexB[iter++] = node.pos.y;
+            colorB[iter] = 1;
+            vertexB[iter++] = node.pos.z;
 
-            vertexBuffer[iter++] = node.pos.x + dir.x;
-            vertexBuffer[iter++] = node.pos.y + dir.y;
-            colorBuffer[iter] = 1;
-            vertexBuffer[iter++] = node.pos.z + dir.z;
+            vertexB[iter++] = node.pos.x + dir.x;
+            vertexB[iter++] = node.pos.y + dir.y;
+            colorB[iter] = 1;
+            vertexB[iter++] = node.pos.z + dir.z;
 
-            vertexBuffer[iter++] = node.pos.x;
-            colorBuffer[iter] = 1;
-            vertexBuffer[iter++] = node.pos.y;
-            vertexBuffer[iter++] = node.pos.z;
+            vertexB[iter++] = node.pos.x;
+            colorB[iter] = 1;
+            vertexB[iter++] = node.pos.y;
+            vertexB[iter++] = node.pos.z;
 
-            vertexBuffer[iter++] = node.pos.x + normal.x;
-            colorBuffer[iter] = 1;
-            vertexBuffer[iter++] = node.pos.y + normal.y;
-            vertexBuffer[iter++] = node.pos.z + normal.z;
+            vertexB[iter++] = node.pos.x + normal.x;
+            colorB[iter] = 1;
+            vertexB[iter++] = node.pos.y + normal.y;
+            vertexB[iter++] = node.pos.z + normal.z;
 
-            colorBuffer[iter] = 1;
-            vertexBuffer[iter++] = node.pos.x;
-            vertexBuffer[iter++] = node.pos.y;
-            vertexBuffer[iter++] = node.pos.z;
+            colorB[iter] = 1;
+            vertexB[iter++] = node.pos.x;
+            vertexB[iter++] = node.pos.y;
+            vertexB[iter++] = node.pos.z;
 
-            colorBuffer[iter] = 1;
-            vertexBuffer[iter++] = node.pos.x + binormal.x;
-            vertexBuffer[iter++] = node.pos.y + binormal.y;
-            vertexBuffer[iter++] = node.pos.z + binormal.z;
+            colorB[iter] = 1;
+            vertexB[iter++] = node.pos.x + binormal.x;
+            vertexB[iter++] = node.pos.y + binormal.y;
+            vertexB[iter++] = node.pos.z + binormal.z;
         }
         assert(iter === array_len, 'bad buffer size');
 
+
+        gl.bindVertexArray(this.vao);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexBuffer, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexB, gl.DYNAMIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, colorBuffer, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, colorB, gl.DYNAMIC_DRAW);
 
+        gl.bindVertexArray(null);
     }
 
     draw() {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.drawArrays(gl.LINES, this.vertexBuffer, this.lineCount)
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        gl.drawArrays(gl.LINES, this.vertexBuffer, this.lineCount);
+        gl.bindVertexArray(null);
     }
 }
 

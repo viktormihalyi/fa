@@ -1,20 +1,11 @@
 "use strict";
 
-function lerp(a, b, t) {
-    return a * (1 - t) + b * t;
-}
-
 // https://en.wikipedia.org/wiki/File:Catmull-Rom_Parameterized_Time.png
 // centripetal: alpha = 0.5
 // uniform:     alpha = 0
 // chordal:     alpha = 1
 const ALPHA = 1;
 const EPSILON = 1e-2;
-
-function tj(ti, pi, pj) {
-    let len = Math.max(EPSILON, pj.minus(pi).length());
-    return Math.pow(len, ALPHA) + ti;
-}
 
 // https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
 // centripetal catmull rom spline
@@ -37,6 +28,11 @@ function catmull_rom_spline(p0, p1, p2, p3, t) {
     return c;
 }
 
+function tj(ti, pi, pj) {
+    let len = Math.max(EPSILON, pj.minus(pi).length());
+    return Math.pow(len, ALPHA) + ti;
+}
+
 
 class Scene {
     constructor(gl) {
@@ -50,7 +46,7 @@ class Scene {
         this.camera = new Camera();
         this.tree = new Tree();
 
-        this.linesGeometry = new LinesGeometry(gl);
+        this.treeGeometry = new TreeGeometry(gl);
         this.frenetGeometry = new FrenetGeometry(gl);
 
         this.last_tree_count = this.tree.nodes.length;
@@ -67,7 +63,7 @@ class Scene {
 
         this.tree.grow();
         if (this.tree.nodes.length !== this.last_tree_count) {
-            this.linesGeometry.setPoints(this.tree.nodes);
+            this.treeGeometry.setPoints(this.tree.nodes);
             this.frenetGeometry.setPoints(this.tree.nodes);
         }
         this.last_tree_count = this.tree.nodes.length;
@@ -81,7 +77,9 @@ class Scene {
         // render
         this.solidProgram.commit();
 
-        if (!keysPressed['SPACE']) {
+        const debug_mode = !keysPressed['SPACE'];
+
+        if (!debug_mode) {
             this.camera.eyePos.x = 200*Math.sin(t/1);
             this.camera.target = new Vec3(0, 0, 0);
             this.camera.eyePos.y = this.camera.target.y = 150;
@@ -114,10 +112,9 @@ class Scene {
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 
-        const wireframe_mode = keysPressed['SPACE'];
-        this.linesGeometry.draw(wireframe_mode);
-        if (wireframe_mode) {
-            this.frenetGeometry.draw(wireframe_mode);
+        this.treeGeometry.draw(false);
+        if (debug_mode) {
+            this.frenetGeometry.draw();
         }
     }
 }

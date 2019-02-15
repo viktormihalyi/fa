@@ -1,29 +1,34 @@
 "use strict";
 
-Math.seedrandom(7);
+Math.seedrandom(1);
 
-function randomBetween(min, max) {
-    return Math.floor(Math.random()*(max-min+1)+min);
-}
-
+// number of attraction points to generate
 const ATTRACTION_POINT_COUNT = 100;
 
-const CIRCLE_CENTER = new Vec3(0, 200, 0);
-const CIRCLE_RADIUS = 150;
+// attraction points generation around a circle
+const CIRCLE_CENTER = new Vec3(0, 150, 0);
+const CIRCLE_RADIUS = 50;
 
+// space colonization algorithm constants
 const INFL_MIN_DIST = 12*2;
 const INFL_MAX_DIST = 60*2;
-
 const BRANCH_LENGTH = 15*3;
-const TREE_START_POS = new Vec3(0, 0, 0);
-const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
-const MAX_TREE_SIZE = 600;
-
+// starting tree node values
+const TREE_INITIAL_POS = new Vec3(0, 0, 0);
+const TREE_INITIAL_DIRECTION = new Vec3(0, 1, 0);
+const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
 const TREE_STARTING_WIDTH = 5;
 
-const PREVIOUS_DIR_POWER = 1; // 0 - not taking previous dir into consideration
-const BRANCH_WIDTH_SCALE = 0.8;
+// stop grwoing after reaching this many tree nodes
+const MAX_TREE_SIZE = 50;
+
+// how much the previous growing direction should affect the next node
+// 0 - not taken into consideration
+const PREVIOUS_DIR_POWER = 1;
+
+// width scales with each node
+const BRANCH_WIDTH_SCALE = 0.7;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -53,24 +58,20 @@ class TreeNode {
     }
 }
 
-function round(x) {
-    return Math.round(x*10)/10;
-}
-
-function pv(vec) {
-    return `(${round(vec.x)}, ${round(vec.y)}, ${round(vec.z)})`
-}
-
 class Tree {
     constructor() {
         this.nodes = [];
-        this.nodes.push(new TreeNode(null,
-            TREE_START_POS,
-            INITIAL_DIRECTION,
-            TREE_STARTING_WIDTH,
-            new Vec3(0, 0, 1)));
-
         this.attractionPoints = [];
+
+        // setup starting tree - just one one
+        this.nodes.push(new TreeNode(
+            null, // parent
+            TREE_INITIAL_POS,
+            TREE_INITIAL_DIRECTION,
+            TREE_STARTING_WIDTH,
+            TREE_INITIAL_NORMAL));
+
+        // generate attraction points
         while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
             const rndpoint = new Vec3(
                 randomBetween(-CIRCLE_CENTER.x-CIRCLE_RADIUS, CIRCLE_CENTER.x+CIRCLE_RADIUS),
@@ -97,6 +98,10 @@ class Tree {
     }
 
 
+    // - interpolates the tree nodes with splines
+    // - currently uses the centripetal catmull rom splnie
+    // - the argument means how many extra nodes
+    //   we want to insert between 2 nodes
     lel(mennyit) {
 
         // setting parents is fine during the iteration
@@ -105,38 +110,43 @@ class Tree {
         let newNodes = [];
         let newChildParents = [];
 
-        for (let node of this.nodes) {
+        for (const node of this.nodes) {
 
             for (let i = 0; i < node.children.length; i++) {
                 const child = node.children[i];
 
+                // use this variable for setting the next node's parent
                 let last = node;
-                let first = true;
 
-                if (node.parent) {
-                    console.log('choose actual parent');
-                }
-
+                // spline between node (from) and child (to)
                 for (let j = 1; j <= mennyit; j++) {
                     const t = j / (mennyit + 1);
 
                     const newNode = this.interpolate_node_between(node, child, t);
+
+                    // parent should be the previous node
                     newNode.parent = last;
 
+                    // save the relationship for the end
                     newChildParents.push({
                         child: newNode,
                         parent: last
                     })
-                    last = newNode;
+
+                    // save the node for inserting into the Tree#nodes list later
                     newNodes.push(newNode);
 
 
-                    if (first) {
-                        first = false;
+                    // first iteration, set the FROM nodes children
+                    if (j === 1) {
                         node.children[i] = newNode;
                     }
+
+                    // save the last
+                    last = newNode;
                 }
 
+                // the last interpolated node AND the child (to) 's relationship
                 last.children.push(child);
                 child.parent = last;
             }
@@ -152,8 +162,11 @@ class Tree {
         return pos.minus(CIRCLE_CENTER).length() < CIRCLE_RADIUS;
     }
 
+    // keep only the attraction points which are further
+    // away than a specific distance from all tree nodes
     removeReachedAttractionPoints() {
         this.attractionPoints = this.attractionPoints.filter((e) => {
+            // search for the closest tree node's distance
             let closestDist = Number.MAX_SAFE_INTEGER;
             for (let treeNode of this.nodes) {
                 let dist = treeNode.pos.minus(e).length();
@@ -167,6 +180,7 @@ class Tree {
 
     /*
     calculates a rotation minimizing frame (RMF)
+    https://i2.cs.hku.hk/GraphicsGroup/publications/pdf/Computation%20of%20rotation%20minimizing%20frames.pdf
 
     inputs: - a tree node and its frame (source)
             - the delta vector for calculating the next node'
@@ -231,7 +245,7 @@ class Tree {
             return;
         }
 
-        console.log('tree size:', this.nodes.length);
+        console.log('tree size:', this.nodes.length, 'nodes');
 
         let influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
 
@@ -261,7 +275,6 @@ class Tree {
             // no attraction at all, just grow up
             const lastNode = this.nodes[this.nodes.length - 1];
             this.growFrom(lastNode, lastNode.dir);
-
 
         } else {
             // grow according to attractions
