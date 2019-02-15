@@ -27,11 +27,10 @@ class FrenetGeometry {
     }
 
     setPoints(tree) {
-        console.log('updating points FRENETGEOMETRY');
+        console.log(`FrenetGeometry#setPoints(${tree.length})`);
         const gl = this.gl;
 
         this.lineCount = tree.length * 3;
-
 
         const array_len = this.lineCount * 6;
         const vertexBuffer = new Float32Array(array_len);
@@ -39,7 +38,7 @@ class FrenetGeometry {
 
         colorBuffer.fill(0);
 
-        let vi = 0;
+        let iter = 0;
 
         for (let i = 0; i < tree.length; i++) {
             const node = tree[i];
@@ -52,37 +51,37 @@ class FrenetGeometry {
             // green - principal normal
             // blue  - tangent (dir)
 
-            vertexBuffer[vi++] = node.pos.x;
-            vertexBuffer[vi++] = node.pos.y;
-            colorBuffer[vi] = 1;
-            vertexBuffer[vi++] = node.pos.z;
+            vertexBuffer[iter++] = node.pos.x;
+            vertexBuffer[iter++] = node.pos.y;
+            colorBuffer[iter] = 1;
+            vertexBuffer[iter++] = node.pos.z;
 
-            vertexBuffer[vi++] = node.pos.x + dir.x;
-            vertexBuffer[vi++] = node.pos.y + dir.y;
-            colorBuffer[vi] = 1;
-            vertexBuffer[vi++] = node.pos.z + dir.z;
+            vertexBuffer[iter++] = node.pos.x + dir.x;
+            vertexBuffer[iter++] = node.pos.y + dir.y;
+            colorBuffer[iter] = 1;
+            vertexBuffer[iter++] = node.pos.z + dir.z;
 
-            vertexBuffer[vi++] = node.pos.x;
-            colorBuffer[vi] = 1;
-            vertexBuffer[vi++] = node.pos.y;
-            vertexBuffer[vi++] = node.pos.z;
+            vertexBuffer[iter++] = node.pos.x;
+            colorBuffer[iter] = 1;
+            vertexBuffer[iter++] = node.pos.y;
+            vertexBuffer[iter++] = node.pos.z;
 
-            vertexBuffer[vi++] = node.pos.x + normal.x;
-            colorBuffer[vi] = 1;
-            vertexBuffer[vi++] = node.pos.y + normal.y;
-            vertexBuffer[vi++] = node.pos.z + normal.z;
+            vertexBuffer[iter++] = node.pos.x + normal.x;
+            colorBuffer[iter] = 1;
+            vertexBuffer[iter++] = node.pos.y + normal.y;
+            vertexBuffer[iter++] = node.pos.z + normal.z;
 
-            colorBuffer[vi] = 1;
-            vertexBuffer[vi++] = node.pos.x;
-            vertexBuffer[vi++] = node.pos.y;
-            vertexBuffer[vi++] = node.pos.z;
+            colorBuffer[iter] = 1;
+            vertexBuffer[iter++] = node.pos.x;
+            vertexBuffer[iter++] = node.pos.y;
+            vertexBuffer[iter++] = node.pos.z;
 
-            colorBuffer[vi] = 1;
-            vertexBuffer[vi++] = node.pos.x + binormal.x;
-            vertexBuffer[vi++] = node.pos.y + binormal.y;
-            vertexBuffer[vi++] = node.pos.z + binormal.z;
+            colorBuffer[iter] = 1;
+            vertexBuffer[iter++] = node.pos.x + binormal.x;
+            vertexBuffer[iter++] = node.pos.y + binormal.y;
+            vertexBuffer[iter++] = node.pos.z + binormal.z;
         }
-
+        assert(iter === array_len, 'bad buffer size');
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertexBuffer, gl.DYNAMIC_DRAW);

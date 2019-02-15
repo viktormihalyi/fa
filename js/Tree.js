@@ -14,7 +14,7 @@ const CIRCLE_RADIUS = 150;
 const INFL_MIN_DIST = 12*2;
 const INFL_MAX_DIST = 60*2;
 
-const BRANCH_LENGTH = 5*3;
+const BRANCH_LENGTH = 15*3;
 const TREE_START_POS = new Vec3(0, 0, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
@@ -23,7 +23,7 @@ const MAX_TREE_SIZE = 600;
 const TREE_STARTING_WIDTH = 5;
 
 const PREVIOUS_DIR_POWER = 1; // 0 - not taking previous dir into consideration
-const BRANCH_WIDTH_SCALE = 0.92;
+const BRANCH_WIDTH_SCALE = 0.8;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -33,6 +33,10 @@ class TreeNode {
         this.width = width;
         this.children = [];
         this.normal = normal.clone().normalize();
+    }
+
+    binormal() {
+        return this.dir.cross(this.normal).normalize();
     }
 
     getDominantChild() {
@@ -93,8 +97,7 @@ class Tree {
     }
 
 
-    lel() {
-        const mennyit = 2;
+    lel(mennyit) {
 
         // setting parents is fine during the iteration
         // but setting children will result in an infinite loop
@@ -162,13 +165,55 @@ class Tree {
         });
     }
 
+    /*
+    calculates a rotation minimizing frame (RMF)
+
+    inputs: - a tree node and its frame (source)
+            - the delta vector for calculating the next node'
+                 position and tangent vector (direction)
+    output: a single normal vector
+
+    note: the binormal is omitted here because, it can
+          always be calculated from the tangent and the normal vectors
+    */
+    grow_rmf_normal(source, direction) {
+        // inputs for frame 0
+        const x0 = source.pos;
+        const t0 = source.dir;
+        const r0 = source.normal;
+        // const s0 = source.binormal();
+
+        // inputs for frame 1
+        const x1 = source.pos.plus(direction);
+        const t1 = direction.clone().normalize();
+
+        // outputs for frame 1
+        let r1 = 0;
+        //let s1 = 0;
+
+        // magic
+        const v1 = x1.minus(x0);
+        const c1 = v1.dot(v1);
+        const rLi = r0.minus(v1.times((2/c1) * v1.dot(r0)));
+        const tLi = t0.minus(v1.times((2/c1) * v1.dot(t0)));
+        const v2 = t1.minus(tLi);
+        const c2 = v2.dot(v2);
+        r1 = rLi.minus(v2.times((2/c2) * (v2.dot(rLi))));
+        // s1 = t1.cross(r1);
+
+        return r1;
+    }
+
     growFrom(source, direction) {
-        // https://solitaryroad.com/c253.html
-        const acceleration_vector = direction.minus(source.dir).normalize();
-        const principal_normal = direction.cross(acceleration_vector).cross(direction);
+        // frenet frame
+        // https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas
+        // const acceleration_vector = direction.minus(source.dir).normalize();
+        // const principal_normal = direction.cross(acceleration_vector).cross(direction);
+
+        // rmf frame
+        const principal_normal = this.grow_rmf_normal(source, direction);
 
         const angle = source.dir.dot(direction);
-        console.log(angle);
 
         const newNode = new TreeNode(
             source,
@@ -186,7 +231,7 @@ class Tree {
             return;
         }
 
-        console.log(this.nodes.length);
+        console.log('tree size:', this.nodes.length);
 
         let influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
 
