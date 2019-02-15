@@ -49,25 +49,17 @@ class Scene {
 
         this.camera = new Camera();
         this.tree = new Tree();
+
         this.linesGeometry = new LinesGeometry(gl);
+        this.frenetGeometry = new FrenetGeometry(gl);
 
         this.last_tree_count = this.tree.nodes.length;
 
-        let pp = new Vec3(-2, -3, 0);
-        let p0 = new Vec3(0, 0, 0);
-        let p1 = new Vec3(5, 5, 0);
-        let pn = new Vec3(7, 0, 0);
-
-        for (let t = 0; t <= 1; t += 0.2) {
-            const point = catmull_rom_spline(pp, p0, p1, pn, t);
-            console.log(pv(point));
-        }
-
         this.BG_COLOR = new Vec3(1, 1, 1);
-
     }
 
     update(gl, keysPressed) {
+
         const timeAtThisFrame = new Date().getTime();
         const dt = (timeAtThisFrame - this.timeAtLastFrame) / 1000.0;
         const t = (timeAtThisFrame - this.timeAtFirstFrame) / 1000.0;
@@ -76,6 +68,7 @@ class Scene {
         this.tree.grow();
         if (this.tree.nodes.length !== this.last_tree_count) {
             this.linesGeometry.setPoints(this.tree.nodes);
+            this.frenetGeometry.setPoints(this.tree.nodes);
         }
         this.last_tree_count = this.tree.nodes.length;
 
@@ -121,8 +114,11 @@ class Scene {
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 
-
-        this.linesGeometry.draw();
+        const wireframe_mode = keysPressed['SPACE'];
+        this.linesGeometry.draw(wireframe_mode);
+        if (wireframe_mode) {
+            this.frenetGeometry.draw(wireframe_mode);
+        }
     }
 }
 

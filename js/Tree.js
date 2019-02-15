@@ -14,13 +14,15 @@ const CIRCLE_RADIUS = 150;
 const INFL_MIN_DIST = 12*2;
 const INFL_MAX_DIST = 60*2;
 
-const BRANCH_LENGTH = 5*2;
+const BRANCH_LENGTH = 5*3;
 const TREE_START_POS = new Vec3(0, 0, 0);
 const INITIAL_DIRECTION = new Vec3(0, 1, 0);
 
 const MAX_TREE_SIZE = 600;
 
-const PREVIOUS_DIR_POWER = 0.9;
+const TREE_STARTING_WIDTH = 5;
+
+const PREVIOUS_DIR_POWER = 1; // 0 - not taking previous dir into consideration
 const BRANCH_WIDTH_SCALE = 0.92;
 
 class TreeNode {
@@ -58,9 +60,11 @@ function pv(vec) {
 class Tree {
     constructor() {
         this.nodes = [];
-        this.nodes.push(new TreeNode(null, TREE_START_POS, INITIAL_DIRECTION, 10, new Vec3(0, 0, 1)));
-        // this.growFrom(this.nodes[this.nodes.length-1], new Vec3(0, 10, 1).normalize());
-        // this.growFrom(this.nodes[this.nodes.length-1], new Vec3(0, 10, 5).normalize());
+        this.nodes.push(new TreeNode(null,
+            TREE_START_POS,
+            INITIAL_DIRECTION,
+            TREE_STARTING_WIDTH,
+            new Vec3(0, 0, 1)));
 
         this.attractionPoints = [];
         while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
@@ -162,9 +166,14 @@ class Tree {
         // https://solitaryroad.com/c253.html
         const acceleration_vector = direction.minus(source.dir).normalize();
         const principal_normal = direction.cross(acceleration_vector).cross(direction);
+
+        const angle = source.dir.dot(direction);
+        console.log(angle);
+
         const newNode = new TreeNode(
             source,
-            source.pos.plus(direction.times(BRANCH_LENGTH)),
+            source.pos.plus(direction.times(Math.pow(angle, 2)*BRANCH_LENGTH)),
+            // source.pos.plus(direction.times(BRANCH_LENGTH)),
             direction,
             source.width*BRANCH_WIDTH_SCALE,
             principal_normal);

@@ -21,7 +21,7 @@ class LinesGeometry {
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         // element array buffer
-        // this.indexBuffer = gl.createBuffer();
+        this.indexBuffer = gl.createBuffer();
 
         gl.bindVertexArray(null);
     }
@@ -41,7 +41,7 @@ class LinesGeometry {
 
         // circle resolution
         // each circle will be made of this many vertices
-        const circ = 6;
+        const circ = 4;
 
         // number of vertices generated for each node
         const o = debug ? 18 : 6;
@@ -49,11 +49,10 @@ class LinesGeometry {
         // first node doesnt have a parent
         this.connection_count = tree.length * circ;
 
-        const array_len = this.connection_count * 6;
+        const array_len = this.connection_count * 3;
 
-        const f = new Float32Array(array_len);
-        const c = new Float32Array(array_len);
-        c.fill(0);
+        const vertexBuf = new Float32Array(array_len);
+
 
         console.log('tree lengt', tree.length);
         console.log('conn count', this.connection_count);
@@ -63,90 +62,109 @@ class LinesGeometry {
 
         for (let i = 0; i < tree.length; i++) {
             const node = tree[i];
-            if (true || node.parent !== null) {
-                const binormal = node.normal.cross(node.dir).normalize();
 
-                if (!debug) {
-                    const step = 2*Math.PI/circ;
+            const binormal = node.normal.cross(node.dir).normalize();
 
-                    for (let j = 0; j < circ; j++) {
-                        const p1 = circle(step*(j),   node.width, node.pos, binormal, node.normal);
-                        const p2 = circle(step*(j+1), node.width, node.pos, binormal, node.normal);
+            if (!debug) {
+                const step = 2*Math.PI/circ;
 
-                        f[lc++] = p1.x;
-                        f[lc++] = p1.y;
-                        f[lc++] = p1.z;
+                for (let j = 0; j < circ; j++) {
+                    const p1 = circle(step*j, node.width, node.pos, binormal, node.normal);
 
-                        f[lc++] = p2.x;
-                        f[lc++] = p2.y;
-                        f[lc++] = p2.z;
-                    }
-
-                } else {
-                    f[i*o+0] = node.pos.x;
-                    f[i*o+1] = node.pos.y;
-                    f[i*o+2] = node.pos.z;
-                    // c[i*o+0] = 1;
-
-                    f[i*o+3] = node.pos.x + node.dir.x;
-                    f[i*o+4] = node.pos.y + node.dir.y;
-                    f[i*o+5] = node.pos.z + node.dir.z;
-                    // c[i*o+3] = 1;
-
-                    f[i*o+6] = node.pos.x;
-                    f[i*o+7] = node.pos.y;
-                    f[i*o+8] = node.pos.z;
-                    c[i*o+7] = 1;
-
-                    f[i*o+9] = node.pos.x + node.normal.x;
-                    f[i*o+10] = node.pos.y + node.normal.y;
-                    f[i*o+11] = node.pos.z + node.normal.z;
-                    c[i*o+10] = 1;
-
-                    f[i*o+12] = node.pos.x;
-                    f[i*o+13] = node.pos.y;
-                    f[i*o+14] = node.pos.z;
-                    c[i*o+12] = 1;
-
-                    f[i*o+15] = node.pos.x + binormal.x;
-                    f[i*o+16] = node.pos.y + binormal.y;
-                    f[i*o+17] = node.pos.z + binormal.z;
-                    c[i*o+15] = 1;
+                    vertexBuf[lc++] = p1.x;
+                    vertexBuf[lc++] = p1.y;
+                    vertexBuf[lc++] = p1.z;
                 }
 
+            } else {
+                vertexBuf[i*o+0] = node.pos.x;
+                vertexBuf[i*o+1] = node.pos.y;
+                vertexBuf[i*o+2] = node.pos.z;
+                // c[i*o+0] = 1;
+
+                vertexBuf[i*o+3] = node.pos.x + node.dir.x;
+                vertexBuf[i*o+4] = node.pos.y + node.dir.y;
+                vertexBuf[i*o+5] = node.pos.z + node.dir.z;
+                // c[i*o+3] = 1;
+
+                vertexBuf[i*o+6] = node.pos.x;
+                vertexBuf[i*o+7] = node.pos.y;
+                vertexBuf[i*o+8] = node.pos.z;
+                c[i*o+7] = 1;
+
+                vertexBuf[i*o+9] = node.pos.x + node.normal.x;
+                vertexBuf[i*o+10] = node.pos.y + node.normal.y;
+                vertexBuf[i*o+11] = node.pos.z + node.normal.z;
+                c[i*o+10] = 1;
+
+                vertexBuf[i*o+12] = node.pos.x;
+                vertexBuf[i*o+13] = node.pos.y;
+                vertexBuf[i*o+14] = node.pos.z;
+                c[i*o+12] = 1;
+
+                vertexBuf[i*o+15] = node.pos.x + binormal.x;
+                vertexBuf[i*o+16] = node.pos.y + binormal.y;
+                vertexBuf[i*o+17] = node.pos.z + binormal.z;
+                c[i*o+15] = 1;
             }
+
         }
         console.log(lc);
 
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, f, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexBuf, gl.DYNAMIC_DRAW);
 
+        const c = new Float32Array(array_len);
+        c.fill(0);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, c, gl.DYNAMIC_DRAW);
 
         // // index vbo
-        // this.lineCount = tree.length - 1;
-        // const indexBuffer = new Uint16Array(this.lineCount * 2);
+        this.lineCount = 0;
+        for (let node of tree) {
+            this.lineCount += node.children.length * 6 * circ;
+        }
+        const indexBuffer = new Uint16Array(this.lineCount);
 
-        // let lc = 0;
-        // for (let node of tree) {
-        //     for (let child of node.children) {
-        //         indexBuffer[lc++] = tree.indexOf(node);
-        //         indexBuffer[lc++] = tree.indexOf(child);
-        //     }
-        // }
+        lc = 0;
+        for (let node of tree) {
+            for (let child of node.children) {
+                const node_idx = tree.indexOf(node);
+                const child_idx = tree.indexOf(child);
 
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        // gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer, gl.DYNAMIC_DRAW);
+                if (child_idx > 65536) {
+                    console.error('awt');
+                }
+
+                for (let i = 0; i < circ; i++) {
+                    indexBuffer[lc++] = child_idx * circ + i;
+                    indexBuffer[lc++] = node_idx  * circ + i;
+                    indexBuffer[lc++] = node_idx  * circ + (i+1) % circ;
+
+                    indexBuffer[lc++] = child_idx * circ + i;
+                    indexBuffer[lc++] = node_idx  * circ + (i+1) % circ;
+                    indexBuffer[lc++] = child_idx * circ + (i+1) % circ;
+                }
+            }
+        }
+        console.log(this.lineCount, lc);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer, gl.DYNAMIC_DRAW);
     }
 
-    draw() {
+    draw(wireframe) {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        // gl.drawElements(gl.LINES, this.lineCount, gl.UNSIGNED_SHORT, 0);
-        gl.drawArrays(gl.LINES, this.vertexBuffer, this.connection_count*2);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+        if (wireframe) {
+            gl.drawElements(gl.LINES, this.lineCount, gl.UNSIGNED_SHORT, 0);
+        } else {
+            gl.drawElements(gl.TRIANGLES, this.lineCount, gl.UNSIGNED_SHORT, 0);
+        }
+        // gl.drawArrays(gl.LINES, this.vertexBuffer, this.connection_count);
     }
 }
 
