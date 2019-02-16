@@ -32,9 +32,9 @@ class FrenetGeometry {
         console.log(`FrenetGeometry#setPoints(${tree.length})`);
         const gl = this.gl;
 
-        this.lineCount = tree.length * 3;
+        this.vertexCount = tree.length * 6;
 
-        const array_len = this.lineCount * 6;
+        const array_len = this.vertexCount * 3;
         const vertexB = new Float32Array(array_len);
         const colorB = new Float32Array(array_len);
 
@@ -99,7 +99,7 @@ class FrenetGeometry {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.drawArrays(gl.LINES, this.vertexBuffer, this.lineCount);
+        gl.drawArrays(gl.LINES, this.vertexBuffer, this.vertexCount);
         gl.bindVertexArray(null);
     }
 }

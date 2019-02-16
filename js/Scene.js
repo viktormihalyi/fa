@@ -52,6 +52,8 @@ class Scene {
         this.last_tree_count = this.tree.nodes.length;
 
         this.BG_COLOR = new Vec3(1, 1, 1);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
 
     update(gl, keysPressed) {
@@ -80,13 +82,13 @@ class Scene {
         const debug_mode = !keysPressed['SPACE'];
 
         if (!debug_mode) {
-            this.camera.eyePos.x = 200*Math.sin(t/1);
+            this.camera.eyePos.x = 400*Math.sin(t/1);
             this.camera.target = new Vec3(0, 0, 0);
             this.camera.eyePos.y = this.camera.target.y = 150;
-            this.camera.eyePos.z = 200*Math.cos(t/1);
+            this.camera.eyePos.z = 400*Math.cos(t/1);
         } else {
 
-            const camera_speed = 5;
+            const camera_speed = 2;
             const lookat = this.camera.target.minus(this.camera.eyePos).normalize();
             if (keysPressed['W']) {
                 this.camera.eyePos.add(lookat.times(camera_speed));
@@ -106,13 +108,21 @@ class Scene {
                 this.camera.eyePos.add(left.times(camera_speed));
                 this.camera.target = this.camera.eyePos.plus(lookat);
             }
+            if (keysPressed['Q']) {
+                this.camera.eyePos.y -= camera_speed;
+                this.camera.target.y -= camera_speed;
+            }
+            if (keysPressed['E']) {
+                this.camera.eyePos.y += camera_speed;
+                this.camera.target.y += camera_speed;
+            }
 
         }
 
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 
-        this.treeGeometry.draw(false);
+        this.treeGeometry.draw(debug_mode);
         if (debug_mode) {
             this.frenetGeometry.draw();
         }

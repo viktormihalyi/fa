@@ -1,34 +1,34 @@
 "use strict";
 
-Math.seedrandom(1);
+Math.seedrandom(7);
 
 // number of attraction points to generate
-const ATTRACTION_POINT_COUNT = 100;
+const ATTRACTION_POINT_COUNT = 150;
 
 // attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(0, 150, 0);
-const CIRCLE_RADIUS = 50;
+const CIRCLE_CENTER = new Vec3(0, 250, 0);
+const CIRCLE_RADIUS = 100;
 
 // space colonization algorithm constants
-const INFL_MIN_DIST = 12*2;
-const INFL_MAX_DIST = 60*2;
-const BRANCH_LENGTH = 15*3;
+const INFL_MIN_DIST = 40;
+const INFL_MAX_DIST = 150;
+const BRANCH_LENGTH = 30;
 
 // starting tree node values
 const TREE_INITIAL_POS = new Vec3(0, 0, 0);
 const TREE_INITIAL_DIRECTION = new Vec3(0, 1, 0);
 const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
-const TREE_STARTING_WIDTH = 5;
+const TREE_STARTING_WIDTH = 25;
 
 // stop grwoing after reaching this many tree nodes
-const MAX_TREE_SIZE = 50;
+const MAX_TREE_SIZE = 250;
 
 // how much the previous growing direction should affect the next node
 // 0 - not taken into consideration
 const PREVIOUS_DIR_POWER = 1;
 
 // width scales with each node
-const BRANCH_WIDTH_SCALE = 0.7;
+const BRANCH_WIDTH_SCALE = 0.9
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -74,9 +74,9 @@ class Tree {
         // generate attraction points
         while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
             const rndpoint = new Vec3(
-                randomBetween(-CIRCLE_CENTER.x-CIRCLE_RADIUS, CIRCLE_CENTER.x+CIRCLE_RADIUS),
-                randomBetween(-CIRCLE_CENTER.y-CIRCLE_RADIUS, CIRCLE_CENTER.y+CIRCLE_RADIUS),
-                randomBetween(-CIRCLE_CENTER.z-CIRCLE_RADIUS, CIRCLE_CENTER.z+CIRCLE_RADIUS));
+                randomBetween(-1000, 1000),
+                randomBetween(50, 1000),
+                randomBetween(-1000, 1000));
 
             if (this.good_point(rndpoint)) {
                 this.attractionPoints.push(rndpoint);
@@ -159,7 +159,12 @@ class Tree {
     }
 
     good_point(pos) {
-        return pos.minus(CIRCLE_CENTER).length() < CIRCLE_RADIUS;
+        const a = CIRCLE_RADIUS*2;
+        const b = CIRCLE_RADIUS*1;
+        const c = CIRCLE_RADIUS*2;
+        return Math.pow((pos.x-CIRCLE_CENTER.x) / a, 2) +
+            Math.pow((pos.y-CIRCLE_CENTER.y) / b, 2) +
+            Math.pow((pos.z-CIRCLE_CENTER.z) / c, 2) <= 1;
     }
 
     // keep only the attraction points which are further
@@ -231,13 +236,17 @@ class Tree {
 
         const newNode = new TreeNode(
             source,
-            source.pos.plus(direction.times(Math.pow(angle, 2)*BRANCH_LENGTH)),
-            // source.pos.plus(direction.times(BRANCH_LENGTH)),
+            source.pos.plus(direction.times(BRANCH_LENGTH)),
             direction,
-            source.width*BRANCH_WIDTH_SCALE,
+            source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
             principal_normal);
+
         source.children.push(newNode);
         this.nodes.push(newNode);
+    }
+
+    dist_to_node(pos, node) {
+        return node.pos.minus(pos).length();
     }
 
     grow() {
@@ -256,7 +265,10 @@ class Tree {
             let closest = null;
             let closestDist = Number.MAX_SAFE_INTEGER;
             for (let treeNode of this.nodes) {
-                let dist = treeNode.pos.minus(apoint).length();
+                // if (treeNode.children.length >= 2) {
+                //     continue;
+                // }
+                let dist = this.dist_to_node(apoint, treeNode);
                 if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
                     closest = treeNode;
                     closestDist = dist;

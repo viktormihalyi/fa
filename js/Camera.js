@@ -3,7 +3,6 @@
 class Camera {
     constructor() {
         this.fov = 90 * Math.PI / 180.0;
-        this.asp = window.innerWidth/window.innerHeight;
 
         this.eyePos = new Vec3(0, 0, 0);
         this.target = new Vec3(0, 0, 0);
@@ -32,11 +31,13 @@ class Camera {
         const fp = 0.1;
         const bp = 1000;
         const tanfov2 = Math.tan(this.fov / 2);
+        const asp = window.innerWidth/window.innerHeight;
+
         return new Mat4(
-            1 / (tanfov2*this.asp), 0,           0,                       0,
-            0,                      1 / tanfov2, 0,                       0,
-            0,                      0,           -(fp + bp) / (bp - fp), -1,
-            0,                      0,           -2 * fp*bp / (bp - fp),  0
+            1 / (tanfov2*asp), 0,           0,                       0,
+            0,                 1 / tanfov2, 0,                       0,
+            0,                 0,           -(fp + bp) / (bp - fp), -1,
+            0,                 0,           -2 * fp*bp / (bp - fp),  0
         );
     }
 }
