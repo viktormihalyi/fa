@@ -88,7 +88,7 @@ class Scene {
             this.camera.eyePos.z = 400*Math.cos(t/1);
         } else {
 
-            const camera_speed = 2;
+            const camera_speed = 3.3;
             const lookat = this.camera.target.minus(this.camera.eyePos).normalize();
             if (keysPressed['W']) {
                 this.camera.eyePos.add(lookat.times(camera_speed));

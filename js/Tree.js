@@ -265,9 +265,9 @@ class Tree {
             let closest = null;
             let closestDist = Number.MAX_SAFE_INTEGER;
             for (let treeNode of this.nodes) {
-                // if (treeNode.children.length >= 2) {
-                //     continue;
-                // }
+                if (treeNode.children.length >= 2) {
+                    continue;
+                }
                 let dist = this.dist_to_node(apoint, treeNode);
                 if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
                     closest = treeNode;
