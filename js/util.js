@@ -20,3 +20,16 @@ function round_to_tenths(x) {
 function pv(vec) {
     return `(${round_to_tenths(vec.x)}, ${round_to_tenths(vec.y)}, ${round_to_tenths(vec.z)})`
 }
+
+function furthestPointInDirection(listOfPoints, direction) {
+    let furthestPoint = null;
+    let furthestPointDistance = 0;
+    for (const point of listOfPoints) {
+        const dist = point.dot(direction);
+        if (dist > furthestPointDistance) {
+            furthestPoint = point;
+            furthestPointDistance = dist;
+        }
+    }
+    return furthestPoint;
+}

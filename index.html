@@ -31,6 +31,63 @@
 
     <script src=//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js></script>
 
+    <script>
+        function factorial(n) {
+            let result = 0;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        // https://www.scratchapixel.com/lessons/advanced-rendering/bezier-curve-rendering-utah-teapot/bezier-surface
+        function binomial_coefficient(n, i) {
+            return factorial(n) / (factorial(i) * factorial(n-i));
+        }
+
+        function bernstein_polynomial(n, i, u) {
+            return binomial_coefficient(n, i) * Math.pow(u, i) * Math.pow(1 - u, n - i);
+        }
+
+        function evalBezierCurve(P, t) {
+            const b0 = (1-t)*(1-t)*(1-t);
+            const b1 = 3*t*(1-t)*(1-t);
+            const b2 = 3*t*t*(1-t);
+            const b3 = t*t*t;
+
+            return P[0].times(b0)
+                .plus(P[1].times(b1))
+                .plus(P[2].times(b2))
+                .plus(P[3].times(b3));
+        }
+
+        function evaluateBezierSurface(P, u, v) {
+            const Pu = new Array(4);
+            for (let i = 0; i < 4; i++) {
+                const curveP = new Array(4);
+                for (let j = 0; j < 4; j++) {
+                    curveP[j] = P[i*4 + j];
+                }
+                Pu[i] = evalBezierCurve(curveP, u);
+            }
+
+            return evalBezierCurve(Pu, v);
+        }
+
+        const points = [
+            new Vec3(0, 0), new Vec3(1, 0), new Vec3(2, 0), new Vec3(8, 0),
+            new Vec3(0, 2), new Vec3(0, 0), new Vec3(0, 0), new Vec3(0, 0),
+            new Vec3(0, 6), new Vec3(0, 0, -36), new Vec3(0, 0), new Vec3(0, 0),
+            new Vec3(0, 8), new Vec3(0, 0), new Vec3(0, 0), new Vec3(16, 16),
+        ];
+        for (let u = 0; u <= 1; u += 0.25) {
+            for (let v = 0; v <= 1; v += 0.25) {
+                const p = evaluateBezierSurface(points, u, v);
+                console.log(`at u=${u}, v=${v} POS IS x=${p.x},y=${p.y},z=${p.z}`);
+            }
+        }
+    </script>
+
     <script src="js/util.js"></script>
     <script src="js/App.js"></script>
     <script src="js/keycodes.js"></script>

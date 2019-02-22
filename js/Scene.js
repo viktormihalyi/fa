@@ -122,7 +122,7 @@ class Scene {
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 
-        this.treeGeometry.draw(debug_mode);
+        this.treeGeometry.draw();
         if (debug_mode) {
             this.frenetGeometry.draw();
         }

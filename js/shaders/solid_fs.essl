@@ -2,10 +2,14 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     precision highp float;
 
     in vec3 color;
+    in vec3 normal;
+    in vec2 uv;
 
     out vec4 fragmentColor;
 
     void main(void) {
-        fragmentColor = vec4(color, 1);
+        // fragmentColor = vec4(color, 1);
+        // fragmentColor = vec4(uv, 0, 1);
+        fragmentColor = vec4(normalize(normal), 1);
     }
 `;

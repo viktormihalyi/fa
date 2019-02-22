@@ -28,7 +28,7 @@ const MAX_TREE_SIZE = 250;
 const PREVIOUS_DIR_POWER = 1;
 
 // width scales with each node
-const BRANCH_WIDTH_SCALE = 0.9
+const BRANCH_WIDTH_SCALE = 0.85;
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal) {
@@ -102,7 +102,7 @@ class Tree {
     // - currently uses the centripetal catmull rom splnie
     // - the argument means how many extra nodes
     //   we want to insert between 2 nodes
-    lel(mennyit) {
+    spline(mennyit) {
 
         // setting parents is fine during the iteration
         // but setting children will result in an infinite loop
@@ -254,7 +254,7 @@ class Tree {
             return;
         }
 
-        console.log('tree size:', this.nodes.length, 'nodes');
+        // console.log('tree size:', this.nodes.length, 'nodes');
 
         let influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
 

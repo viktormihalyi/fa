@@ -29,7 +29,6 @@ class FrenetGeometry {
     }
 
     setPoints(tree) {
-        console.log(`FrenetGeometry#setPoints(${tree.length})`);
         const gl = this.gl;
 
         this.vertexCount = tree.length * 6;

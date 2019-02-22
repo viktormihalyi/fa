@@ -4,8 +4,8 @@ class Camera {
     constructor() {
         this.fov = 90 * Math.PI / 180.0;
 
-        this.eyePos = new Vec3(0, 0, 0);
-        this.target = new Vec3(0, 0, 0);
+        this.eyePos = new Vec3(150, 150, 380);
+        this.target = new Vec3(0, 150, 0);
         this.up     = new Vec3(0, 1, 0);
     }
 
