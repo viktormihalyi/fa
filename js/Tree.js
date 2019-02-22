@@ -18,7 +18,7 @@ const BRANCH_LENGTH = 30;
 const TREE_INITIAL_POS = new Vec3(0, 0, 0);
 const TREE_INITIAL_DIRECTION = new Vec3(0, 1, 0);
 const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
-const TREE_STARTING_WIDTH = 25;
+const TREE_STARTING_WIDTH = 15;
 
 // stop grwoing after reaching this many tree nodes
 const MAX_TREE_SIZE = 250;
@@ -97,6 +97,46 @@ class Tree {
         return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(node.width, nodes_child.width, t), interpolated_normal);
     }
 
+    remove_intersecting_nodes(rougness = 1) {
+        const bifurcation_nodes = this.nodes.filter(node => node.children.length > 1);
+        console.log(`found ${bifurcation_nodes.length} bifurcations`);
+
+        for (const node of bifurcation_nodes) {
+
+            let children_are_intersecting = true;
+            while (children_are_intersecting) {
+                const child0 = node.children[0];
+                const child1 = node.children[1];
+
+                const distance = child0.pos.minus(child1.pos).length() * rougness;
+                children_are_intersecting = distance < child0.width + child1.width;
+
+                if (children_are_intersecting) {
+                    const next_child0 = child0.children[0];
+                    const next_child1 = child1.children[0];
+
+                    assert(child0.children.length === 1, 'not one child');
+                    assert(child1.children.length === 1, 'not one child');
+
+                    assert(next_child0 !== null, 'no next child for 0');
+                    assert(next_child1 !== null, 'no next child for 1');
+
+                    this.nodes.splice(this.nodes.indexOf(child0), 1);
+                    this.nodes.splice(this.nodes.indexOf(child1), 1);
+
+                    node.children.splice(node.children.indexOf(child0), 1);
+                    node.children.splice(node.children.indexOf(child1), 1);
+
+                    node.children.push(next_child0);
+                    node.children.push(next_child1);
+
+                    next_child0.parent = node;
+                    next_child1.parent = node;
+                }
+            }
+        }
+    }
+
 
     // - interpolates the tree nodes with splines
     // - currently uses the centripetal catmull rom splnie
@@ -104,58 +144,63 @@ class Tree {
     //   we want to insert between 2 nodes
     spline(mennyit) {
 
-        // setting parents is fine during the iteration
-        // but setting children will result in an infinite loop
-        // so they are saved here, and will be set after the loops
-        let newNodes = [];
-        let newChildParents = [];
+        let allSplines = [];
 
-        for (const node of this.nodes) {
+        for (let node of this.nodes) {
+            for (let child of node.children) {
 
-            for (let i = 0; i < node.children.length; i++) {
-                const child = node.children[i];
-
-                // use this variable for setting the next node's parent
-                let last = node;
+                // nodes between node and child
+                // first node is closest to 'node'
+                // last node is closest to 'child'
+                // inside, their parent-children relationship will be set
+                let newLine = [];
 
                 // spline between node (from) and child (to)
                 for (let j = 1; j <= mennyit; j++) {
                     const t = j / (mennyit + 1);
 
                     const newNode = this.interpolate_node_between(node, child, t);
-
-                    // parent should be the previous node
-                    newNode.parent = last;
-
-                    // save the relationship for the end
-                    newChildParents.push({
-                        child: newNode,
-                        parent: last
-                    })
-
-                    // save the node for inserting into the Tree#nodes list later
-                    newNodes.push(newNode);
-
-
-                    // first iteration, set the FROM nodes children
-                    if (j === 1) {
-                        node.children[i] = newNode;
-                    }
-
-                    // save the last
-                    last = newNode;
+                    newLine.push(newNode);
                 }
 
-                // the last interpolated node AND the child (to) 's relationship
-                last.children.push(child);
-                child.parent = last;
+                for (let j = 0; j < newLine.length - 1; j++) {
+                    let n = newLine[j];
+                    let nchild = newLine[j+1];
+
+                    n.children.push(nchild);
+                    nchild.parent = n;
+                }
+
+                allSplines.push({
+                    node,   // parent
+                    child,  // child
+                    line: newLine, // array of the nodes
+                });
             }
         }
 
-        for (let rel of newChildParents) {
-            rel.parent.children.push(rel.child);
+        // connect all splines to the existing tree structure
+        for (let spline of allSplines) {
+            let node = spline.node;
+            let child = spline.child;
+
+            // reset node and child relationships
+            child.parent = null;
+            node.children.splice(node.children.indexOf(child), 1);
+
+            let first_node_on_line = spline.line[0];
+            let last_node_on_line = spline.line[spline.line.length-1];
+
+            // connect the first node on the spline to 'node'
+            node.children.push(first_node_on_line);
+            first_node_on_line.parent = node;
+
+            // connect the last node on the spline to 'child'
+            last_node_on_line.children.push(child);
+            child.parent = last_node_on_line;
+
+            this.nodes.push(...spline.line);
         }
-        this.nodes.push(...newNodes);
     }
 
     good_point(pos) {
@@ -265,9 +310,12 @@ class Tree {
             let closest = null;
             let closestDist = Number.MAX_SAFE_INTEGER;
             for (let treeNode of this.nodes) {
+
+                // only allow 2 children max
                 if (treeNode.children.length >= 2) {
                     continue;
                 }
+
                 let dist = this.dist_to_node(apoint, treeNode);
                 if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
                     closest = treeNode;

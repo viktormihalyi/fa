@@ -90,29 +90,29 @@ class Scene {
 
             const camera_speed = 3.3;
             const lookat = this.camera.target.minus(this.camera.eyePos).normalize();
-            if (keysPressed['W']) {
+            if (keysPressed.W) {
                 this.camera.eyePos.add(lookat.times(camera_speed));
                 this.camera.target = this.camera.eyePos.plus(lookat);
             }
-            if (keysPressed['S']) {
+            if (keysPressed.S) {
                 this.camera.eyePos.sub(lookat.times(camera_speed));
                 this.camera.target = this.camera.eyePos.plus(lookat);
             }
-            if (keysPressed['A']) {
+            if (keysPressed.A) {
                 const left = lookat.cross(this.camera.up).normalize();
                 this.camera.eyePos.sub(left.times(camera_speed));
                 this.camera.target = this.camera.eyePos.plus(lookat);
             }
-            if (keysPressed['D']) {
+            if (keysPressed.D) {
                 const left = lookat.cross(this.camera.up).normalize();
                 this.camera.eyePos.add(left.times(camera_speed));
                 this.camera.target = this.camera.eyePos.plus(lookat);
             }
-            if (keysPressed['Q']) {
+            if (keysPressed.Q) {
                 this.camera.eyePos.y -= camera_speed;
                 this.camera.target.y -= camera_speed;
             }
-            if (keysPressed['E']) {
+            if (keysPressed.E) {
                 this.camera.eyePos.y += camera_speed;
                 this.camera.target.y += camera_speed;
             }

@@ -3,7 +3,9 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 5;
+
+const SKIP_CYLINDER_AT_BIFURCATION = true;
 
 const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 
@@ -65,13 +67,17 @@ class TreeGeometry {
         const gl = this.gl;
 
         const array_len = tree.length * CIRCLE_RES * 3;
+
         const vertexBuf = new Float32Array(array_len);
         const normalBuf = new Float32Array(array_len);
         const uvBuf = new Float32Array(array_len/3*2);
 
         // console.log('vertices:', array_len/3);
 
+        // iter for borth the vertex and normal buffer
         let iter = 0;
+
+        // iter for uv buffer
         let iteruv = 0;
 
         this.node_to_circle_idx = new Array(tree.length);
@@ -79,12 +85,12 @@ class TreeGeometry {
         for (let i = 0; i < tree.length; i++){
             const node = tree[i];
 
-            let siblings = [];
-            if (node.parent !== null) {
-                siblings = node.parent.children.filter(sibl => sibl !== node);
-            }
-            const is_bifurcation = siblings.length > 0;
-            if (is_bifurcation) continue;
+            // let siblings = [];
+            // if (node.parent !== null) {
+            //     siblings = node.parent.children.filter(sibl => sibl !== node);
+            // }
+            // const is_bifurcation = siblings.length > 0;
+            // if (SKIP_BIF && is_bifurcation) continue;
 
             this.node_to_circle_idx[i] = iter/3;
 
@@ -129,6 +135,13 @@ class TreeGeometry {
         iter = 0;
         for (let i = 0; i < tree.length; i++) {
             const node = tree[i];
+
+            if (SKIP_CYLINDER_AT_BIFURCATION) {
+                if (node.children.length > 1) {
+                    continue;
+                }
+            }
+
 
             for (let child of node.children) {
                 const node_idx  = this.node_to_circle_idx[i];
