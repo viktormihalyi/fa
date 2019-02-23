@@ -1,8 +1,8 @@
 "use strict";
 class App {
-    constructor(canvas, overlay) {
+    constructor(canvas, status) {
         this.canvas = canvas;
-        this.overlay = overlay;
+        this.status = status;
         // obtain WebGL context
         this.gl = canvas.getContext("webgl2");
         if (this.gl === null) {
@@ -53,10 +53,10 @@ class App {
         if (pendingResourceNames.length === 0) {
             // animate and draw scene
             this.scene.update(this.gl, this.keysPressed);
-            this.overlay.innerHTML = "Ready.";
+            this.status.innerHTML = "WASDQE for moving around<br>1 - normal mode<br>2 - debug mode";
         }
         else {
-            this.overlay.innerHTML = "Loading: " + pendingResourceNames;
+            this.status.innerText = "loading: " + pendingResourceNames;
         }
         // refresh
         window.requestAnimationFrame(() => this.update());
@@ -67,9 +67,9 @@ let app;
 // entry point from HTML
 window.addEventListener('load', function () {
     const canvas = document.getElementById("canvas");
-    const overlay = document.getElementById("overlay");
-    overlay.innerHTML = "WebGL";
+    const status = document.getElementById("status");
+    status.innerText = "loading...";
 
-    app = new App(canvas, overlay);
+    app = new App(canvas, status);
     app.registerEventHandlers();
 });

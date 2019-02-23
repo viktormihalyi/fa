@@ -101,6 +101,8 @@ class Tree {
         const bifurcation_nodes = this.nodes.filter(node => node.children.length > 1);
         console.log(`found ${bifurcation_nodes.length} bifurcations`);
 
+        let removed_count = 0;
+
         for (const node of bifurcation_nodes) {
 
             let children_are_intersecting = true;
@@ -108,10 +110,12 @@ class Tree {
                 const child0 = node.children[0];
                 const child1 = node.children[1];
 
-                const distance = child0.pos.minus(child1.pos).length() * rougness;
+                const distance = child0.pos.minus(child1.pos).length() / rougness;
                 children_are_intersecting = distance < child0.width + child1.width;
 
                 if (children_are_intersecting) {
+                    removed_count++;
+
                     const next_child0 = child0.children[0];
                     const next_child1 = child1.children[0];
 
@@ -135,6 +139,8 @@ class Tree {
                 }
             }
         }
+
+        console.log(`remove ${removed_count} nodes`);
     }
 
 

@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 5;
+const CIRCLE_RES = 6;
 
 const SKIP_CYLINDER_AT_BIFURCATION = true;
 
@@ -17,11 +17,10 @@ const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 //      - center: Vec3 center coordinate
 //      - a, b: 2 Vec3s defining the plane of the circle
 function circle(theta, r, center, a, b) {
-    return new Vec3(
-        Math.cos(theta)*a.x + Math.sin(theta)*b.x,
-        Math.cos(theta)*a.y + Math.sin(theta)*b.y,
-        Math.cos(theta)*a.z + Math.sin(theta)*b.z,
-    ).times(r).add(center);
+    return    a.times(Math.cos(theta))
+        .plus(b.times(Math.sin(theta)))
+        .times(r)
+        .plus(center);
 }
 
 class TreeGeometry {
@@ -113,7 +112,7 @@ class TreeGeometry {
                 vertexBuf[iter++] = point_at_circle.z;
             }
         }
-        // assert(iter === array_len, 'vertex buffer bad size');
+        assert(iter === array_len, 'vertex buffer bad size');
 
 
         const c = new Float32Array(array_len);
@@ -122,6 +121,11 @@ class TreeGeometry {
         // // index vbo
         this.lineCount = 0;
         for (let node of tree) {
+            if (SKIP_CYLINDER_AT_BIFURCATION) {
+                if (node.children.length > 1) {
+                    continue;
+                }
+            }
             this.lineCount += node.children.length * 6 * CIRCLE_RES;
         }
 
@@ -150,7 +154,6 @@ class TreeGeometry {
                 if (node_idx === undefined || child_idx === undefined) {
                     continue;
                 }
-
                 for (let j = 0; j < CIRCLE_RES; j++) {
                     // triangle 1
                     indexBuffer[iter++] = child_idx + j;
@@ -164,29 +167,29 @@ class TreeGeometry {
                 }
             }
         }
-        // assert(iter === this.lineCount, 'bad indexbuffer size');
+        assert(iter === this.lineCount, 'bad indexbuffer size');
 
 
         gl.bindVertexArray(this.vao);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexBuf, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexBuf, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, normalBuf, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, normalBuf, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, uvBuf, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, uvBuf, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, c, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, c, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         gl.bindVertexArray(null);
@@ -196,7 +199,7 @@ class TreeGeometry {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
         if (wireframe) {
             gl.drawElements(gl.LINES, this.lineCount, gl.UNSIGNED_SHORT, 0);

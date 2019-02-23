@@ -54,6 +54,12 @@ class Scene {
         this.BG_COLOR = new Vec3(1, 1, 1);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        this.lastGrowth = this.timeAtFirstFrame;
+
+        this.mode = 1;
+
+        this.bs = new BezierSurfaceGeometry(gl);
     }
 
     update(gl, keysPressed) {
@@ -63,12 +69,17 @@ class Scene {
         const t = (timeAtThisFrame - this.timeAtFirstFrame) / 1000.0;
         this.timeAtLastFrame = timeAtThisFrame;
 
-        this.tree.grow();
-        if (this.tree.nodes.length !== this.last_tree_count) {
-            this.treeGeometry.setPoints(this.tree.nodes);
-            this.frenetGeometry.setPoints(this.tree.nodes);
+        if (timeAtThisFrame - this.lastGrowth > 33) {
+            this.lastGrowth = timeAtThisFrame;
+
+            this.tree.grow();
+
+            if (this.tree.nodes.length !== this.last_tree_count) {
+                this.treeGeometry.setPoints(this.tree.nodes);
+                this.frenetGeometry.setPoints(this.tree.nodes);
+            }
+            this.last_tree_count = this.tree.nodes.length;
         }
-        this.last_tree_count = this.tree.nodes.length;
 
         // clear the screen
         gl.clearColor(this.BG_COLOR.x, this.BG_COLOR.y, this.BG_COLOR.z, 1);
@@ -79,9 +90,8 @@ class Scene {
         // render
         this.solidProgram.commit();
 
-        const debug_mode = !keysPressed['SPACE'];
 
-        if (!debug_mode) {
+        if (keysPressed.SPACE) {
             this.camera.eyePos.x = 400*Math.sin(t/1);
             this.camera.target = new Vec3(0, 0, 0);
             this.camera.eyePos.y = this.camera.target.y = 150;
@@ -122,9 +132,21 @@ class Scene {
         this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
         this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
 
-        this.treeGeometry.draw();
-        if (debug_mode) {
+        if (keysPressed['1']) {
+            this.mode = 1;
+        }
+        if (keysPressed['2']) {
+            this.mode = 2;
+        }
+
+        this.bs.draw();
+
+        if (this.mode === 2) {
+            this.treeGeometry.draw(true);
             this.frenetGeometry.draw();
+
+        } else {
+            this.treeGeometry.draw();
         }
     }
 }

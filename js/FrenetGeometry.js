@@ -86,10 +86,10 @@ class FrenetGeometry {
         gl.bindVertexArray(this.vao);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexB, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, vertexB, gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, colorB, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, colorB, gl.STATIC_DRAW);
 
         gl.bindVertexArray(null);
     }
