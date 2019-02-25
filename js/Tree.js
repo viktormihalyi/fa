@@ -58,6 +58,7 @@ class TreeNode {
     }
 }
 
+// http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
 class Tree {
     constructor() {
         this.nodes = [];

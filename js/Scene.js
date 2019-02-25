@@ -40,6 +40,9 @@ class Scene {
         this.fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, "solid_fs.essl");
         this.solidProgram = new Program(gl, this.vsIdle, this.fsSolid);
 
+        this.uniforms = {};
+        UniformReflection.addProperties(gl, this.solidProgram.glProgram, this.uniforms);
+
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
@@ -129,8 +132,9 @@ class Scene {
 
         }
 
-        this.camera.V().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "V"));
-        this.camera.P().commit(gl, gl.getUniformLocation(this.solidProgram.glProgram, "P"));
+        Uniforms.camera.view.set(this.camera.V());
+        Uniforms.camera.projection.set(this.camera.P());
+        UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
 
         if (keysPressed['1']) {
             this.mode = 1;
@@ -139,7 +143,7 @@ class Scene {
             this.mode = 2;
         }
 
-        this.bs.draw();
+        // this.bs.draw();
 
         if (this.mode === 2) {
             this.treeGeometry.draw(true);
