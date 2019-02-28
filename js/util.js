@@ -22,8 +22,10 @@ function pv(vec) {
 }
 
 function furthestPointInDirection(listOfPoints, direction) {
+    assert(listOfPoints.length > 0, 'empty array');
+
     let furthestPoint = null;
-    let furthestPointDistance = 0;
+    let furthestPointDistance = Number.MIN_SAFE_INTEGER;
     for (const point of listOfPoints) {
         const dist = point.dot(direction);
         if (dist > furthestPointDistance) {
@@ -31,5 +33,28 @@ function furthestPointInDirection(listOfPoints, direction) {
             furthestPointDistance = dist;
         }
     }
+
+    assert(furthestPoint !== null, 'wtf');
     return furthestPoint;
+}
+
+function vec3ArrayToFloat32Array(array) {
+    const result = new Float32Array(array.length * 3);
+    let iter = 0;
+    for (const element of array) {
+        result[iter++] = element.x;
+        result[iter++] = element.y;
+        result[iter++] = element.z;
+    }
+    return result;
+}
+
+function vec2ArrayToFloat32Array(array) {
+    const result = new Float32Array(array.length * 2);
+    let iter = 0;
+    for (const element of array) {
+        result[iter++] = element.x;
+        result[iter++] = element.y;
+    }
+    return result;
 }

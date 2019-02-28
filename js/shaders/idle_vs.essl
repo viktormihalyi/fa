@@ -5,8 +5,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     in vec2 vertexTexCoord;
 
     uniform struct {
-        mat4 view;
-        mat4 projection;
+        mat4 viewProj;
     } camera;
 
     out vec3 color;
@@ -14,7 +13,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     out vec2 uv;
 
     void main(void) {
-        gl_Position = vec4(vertexPosition, 1) * camera.view * camera.projection;
+        gl_Position = vec4(vertexPosition, 1) * camera.viewProj;
         color = vertexColor;
         normal = vertexNormal;
         uv = vertexTexCoord;

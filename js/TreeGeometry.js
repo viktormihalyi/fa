@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 12;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
 
@@ -81,6 +81,15 @@ class TreeGeometry {
 
         this.node_to_circle_idx = new Array(tree.length);
 
+
+        function recursive_set_v(root, n) {
+            root.v = n;
+            for (const child of root.children) {
+                recursive_set_v(child, (n + 1) % 2);
+            }
+        }
+        recursive_set_v(tree[0], 0);
+
         for (let i = 0; i < tree.length; i++){
             const node = tree[i];
 
@@ -96,7 +105,11 @@ class TreeGeometry {
             for (let j = 0; j < CIRCLE_RES; j++) {
                 const point_at_circle = circle(CRICLE_STEP*j, node.width, node.pos, node.binormal(), node.normal);
                 const normal_vector = point_at_circle.minus(node.pos).normalize();
-                const texture_coordinates = new Vec2(j/CIRCLE_RES, 0);
+
+                const texture_coordinates = new Vec2(
+                    (3-j%3)/3,
+                    node.v
+                );
 
                 uvBuf[iteruv++] = texture_coordinates.x;
                 uvBuf[iteruv++] = texture_coordinates.y;

@@ -21,28 +21,27 @@ class App {
         this.canvas.height = this.canvas.clientHeight;
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.gl.enable(this.gl.DEPTH_TEST);
+
+        this.scene.onresize(this.canvas.width, this.canvas.height);
     }
     registerEventHandlers() {
         document.onkeydown = (event) => {
-            //jshint unused:false
             this.keysPressed[keyboardMap[event.keyCode]] = true;
         };
         document.onkeyup = (event) => {
-            //jshint unused:false
             this.keysPressed[keyboardMap[event.keyCode]] = false;
         };
         this.canvas.onmousedown = (event) => {
-            //jshint unused:false
+            this.scene.onmousedown(event);
         };
         this.canvas.onmousemove = (event) => {
-            //jshint unused:false
+            this.scene.onmousemove(event);
             event.stopPropagation();
         };
         this.canvas.onmouseout = (event) => {
-            //jshint unused:false
         };
         this.canvas.onmouseup = (event) => {
-            //jshint unused:false
+            this.scene.onmouseup(event);
         };
         window.addEventListener('resize', () => this.resize());
         window.requestAnimationFrame(() => this.update());

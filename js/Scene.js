@@ -46,8 +46,10 @@ class Scene {
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
-        this.camera = new Camera();
+        this.camera = new PerspectiveCamera();
         this.tree = new Tree();
+
+        this.treeTexture = new Texture2D(gl, `./pine.png`);
 
         this.treeGeometry = new TreeGeometry(gl);
         this.frenetGeometry = new FrenetGeometry(gl);
@@ -80,6 +82,7 @@ class Scene {
             if (this.tree.nodes.length !== this.last_tree_count) {
                 this.treeGeometry.setPoints(this.tree.nodes);
                 this.frenetGeometry.setPoints(this.tree.nodes);
+                // this.bs.setTree(this.tree);
             }
             this.last_tree_count = this.tree.nodes.length;
         }
@@ -94,46 +97,10 @@ class Scene {
         this.solidProgram.commit();
 
 
-        if (keysPressed.SPACE) {
-            this.camera.eyePos.x = 400*Math.sin(t/1);
-            this.camera.target = new Vec3(0, 0, 0);
-            this.camera.eyePos.y = this.camera.target.y = 150;
-            this.camera.eyePos.z = 400*Math.cos(t/1);
-        } else {
+        this.camera.move(dt, keysPressed);
 
-            const camera_speed = 3.3;
-            const lookat = this.camera.target.minus(this.camera.eyePos).normalize();
-            if (keysPressed.W) {
-                this.camera.eyePos.add(lookat.times(camera_speed));
-                this.camera.target = this.camera.eyePos.plus(lookat);
-            }
-            if (keysPressed.S) {
-                this.camera.eyePos.sub(lookat.times(camera_speed));
-                this.camera.target = this.camera.eyePos.plus(lookat);
-            }
-            if (keysPressed.A) {
-                const left = lookat.cross(this.camera.up).normalize();
-                this.camera.eyePos.sub(left.times(camera_speed));
-                this.camera.target = this.camera.eyePos.plus(lookat);
-            }
-            if (keysPressed.D) {
-                const left = lookat.cross(this.camera.up).normalize();
-                this.camera.eyePos.add(left.times(camera_speed));
-                this.camera.target = this.camera.eyePos.plus(lookat);
-            }
-            if (keysPressed.Q) {
-                this.camera.eyePos.y -= camera_speed;
-                this.camera.target.y -= camera_speed;
-            }
-            if (keysPressed.E) {
-                this.camera.eyePos.y += camera_speed;
-                this.camera.target.y += camera_speed;
-            }
-
-        }
-
-        Uniforms.camera.view.set(this.camera.V());
-        Uniforms.camera.projection.set(this.camera.P());
+        Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
+        Uniforms.tex.tree.set(this.treeTexture, 0);
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
 
         if (keysPressed['1']) {
@@ -153,6 +120,20 @@ class Scene {
             this.treeGeometry.draw();
         }
     }
+
+    onresize(width, height) {
+        this.camera.setAspectRatio(width / height);
+    }
+
+    onmousedown(event) {
+        this.camera.mouseDown(event);
+    }
+    onmousemove(event) {
+        this.camera.mouseMove(event);
+    }
+    onmouseup(event) {
+        this.camera.mouseUp(event);
+    };
 }
 
 
