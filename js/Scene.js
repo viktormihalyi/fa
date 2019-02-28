@@ -36,20 +36,45 @@ function tj(ti, pi, pj) {
 
 class Scene {
     constructor(gl) {
-        this.vsIdle = new Shader(gl, gl.VERTEX_SHADER, "idle_vs.essl");
-        this.fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, "solid_fs.essl");
-        this.solidProgram = new Program(gl, this.vsIdle, this.fsSolid);
+        // gl.enable(gl.BLEND);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        const vsIdle = new Shader(gl, gl.VERTEX_SHADER, 'vertex.essl');
+        const fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, 'fragment.essl');
+        this.solidProgram = new Program(gl, vsIdle, fsSolid, [
+            {position: 0, name: 'vertexPosition' },
+            {position: 2, name: 'vertexNormal' },
+            {position: 3, name: 'vertexTexCoord' },
+        ]);
+
+        const vs = new Shader(gl, gl.VERTEX_SHADER, 'vertex_leaves.essl');
+        const fs = new Shader(gl, gl.FRAGMENT_SHADER, 'fragment_leaves.essl');
+        this.leavesShader = new Program(gl, vs, fs, [
+            {position: 0, name: 'vertexPosition' },
+            {position: 2, name: 'vertexNormal' },
+            {position: 3, name: 'vertexTexCoord' },
+            {position: 4, name: 'modelM' },
+        ]);
 
         this.uniforms = {};
         UniformReflection.addProperties(gl, this.solidProgram.glProgram, this.uniforms);
 
+        this.uniforms_leaves = {};
+        UniformReflection.addProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
+
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
+
+        this.leaves = new QuadGeometry(gl);
+
 
         this.camera = new PerspectiveCamera();
         this.tree = new Tree();
 
         this.treeTexture = new Texture2D(gl, `./pine.png`);
+
+        this.leavesTexture = new Texture2D(gl, `./leaves.png`);
+        this.leavesTextureAlpha = new Texture2D(gl, `./leaves_alpha.png`);
 
         this.treeGeometry = new TreeGeometry(gl);
         this.frenetGeometry = new FrenetGeometry(gl);
@@ -83,25 +108,31 @@ class Scene {
                 this.treeGeometry.setPoints(this.tree.nodes);
                 this.frenetGeometry.setPoints(this.tree.nodes);
                 // this.bs.setTree(this.tree);
+
+                const modelMatrices = [];
+                for (const node of this.tree.nodes) {
+                    if (node.children.length === 0) {
+                        modelMatrices.push(node.getTransformationMatrix().scale(BRANCH_LENGTH).translate(node.pos));
+                        modelMatrices.push(node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(90), node.dir).translate(node.pos));
+                    }
+                }
+                this.leaves.setModelMatrices(modelMatrices);
             }
             this.last_tree_count = this.tree.nodes.length;
         }
 
         // clear the screen
         gl.clearColor(this.BG_COLOR.x, this.BG_COLOR.y, this.BG_COLOR.z, 1);
-        // gl.clearColor(0.8, 0.902, 0.902, 1.0);
         gl.clearDepth(1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // render
-        this.solidProgram.commit();
-
-
+        // update camera
         this.camera.move(dt, keysPressed);
-
         Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
-        Uniforms.tex.tree.set(this.treeTexture, 0);
-        UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
+
+
+        // render tree
+        this.uniforms.tree.set(this.treeTexture, 0);
 
         if (keysPressed['1']) {
             this.mode = 1;
@@ -110,15 +141,24 @@ class Scene {
             this.mode = 2;
         }
 
-        // this.bs.draw();
+        this.solidProgram.commit();
+        UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
 
         if (this.mode === 2) {
             this.treeGeometry.draw(true);
             this.frenetGeometry.draw();
-
         } else {
             this.treeGeometry.draw();
         }
+
+        // render leaves
+
+        this.uniforms_leaves.leaves.set(this.leavesTexture);
+        this.uniforms_leaves.leaves_alpha.set(this.leavesTextureAlpha);
+
+        this.leavesShader.commit();
+        UniformReflection.commitProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
+        this.leaves.draw();
     }
 
     onresize(width, height) {

@@ -56,6 +56,18 @@ class TreeNode {
         }
         return dominantChild;
     }
+
+    getTransformationMatrix() {
+        const t = this.dir;
+        const b = this.binormal();
+        const n = this.normal;
+        return new Mat4(
+            t.x, t.y, t.z, 0,
+            b.x, b.y, b.z, 0,
+            n.x, n.y, n.z, 0,
+            0,   0,   0,   1
+        );
+    }
 }
 
 // http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf

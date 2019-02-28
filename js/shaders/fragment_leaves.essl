@@ -1,0 +1,18 @@
+Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 300 es
+    precision highp float;
+
+    in vec2 uv;
+
+    out vec4 fragmentColor;
+
+    uniform sampler2D leaves;
+    uniform sampler2D leaves_alpha;
+
+    void main(void) {
+        float alpha = texture(leaves_alpha, uv).r;
+        if (alpha < 0.05) {
+            discard;
+        }
+        fragmentColor = vec4(texture(leaves, uv).rgb, alpha);
+    }
+`;

@@ -4,6 +4,14 @@ function assert(condition, message) {
     }
 }
 
+function radians(x) {
+    return x / 180 * Math.PI;
+}
+
+function degrees(x) {
+    return x * 180 / Math.PI;
+}
+
 function randomBetween(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
@@ -39,22 +47,9 @@ function furthestPointInDirection(listOfPoints, direction) {
 }
 
 function vec3ArrayToFloat32Array(array) {
-    const result = new Float32Array(array.length * 3);
-    let iter = 0;
-    for (const element of array) {
-        result[iter++] = element.x;
-        result[iter++] = element.y;
-        result[iter++] = element.z;
-    }
-    return result;
+    return new Float32Array(array.flatMap((vec) => [vec.x, vec.y, vec.z]));
 }
 
 function vec2ArrayToFloat32Array(array) {
-    const result = new Float32Array(array.length * 2);
-    let iter = 0;
-    for (const element of array) {
-        result[iter++] = element.x;
-        result[iter++] = element.y;
-    }
-    return result;
+    return new Float32Array(array.flatMap((vec) => [vec.x, vec.y]));
 }

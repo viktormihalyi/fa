@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 12;
+const CIRCLE_RES = 4;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
 
@@ -65,23 +65,7 @@ class TreeGeometry {
     setPoints(tree) {
         const gl = this.gl;
 
-        const array_len = tree.length * CIRCLE_RES * 3;
-
-        const vertexBuf = new Float32Array(array_len);
-        const normalBuf = new Float32Array(array_len);
-        const uvBuf = new Float32Array(array_len/3*2);
-
-        // console.log('vertices:', array_len/3);
-
-        // iter for borth the vertex and normal buffer
-        let iter = 0;
-
-        // iter for uv buffer
-        let iteruv = 0;
-
-        this.node_to_circle_idx = new Array(tree.length);
-
-
+        // set v coordinates for textures
         function recursive_set_v(root, n) {
             root.v = n;
             for (const child of root.children) {
@@ -90,48 +74,33 @@ class TreeGeometry {
         }
         recursive_set_v(tree[0], 0);
 
+
+        const vertexBuf = [];
+        const normalBuf = [];
+        const uvBuf = [];
+
+        this.node_to_circle_idx = new Array(tree.length);
+
+        assert(CIRCLE_RES % 2 === 0, 'odd circle_res');
+
+        const HALF_CIRCLE_RES = CIRCLE_RES / 2;
         for (let i = 0; i < tree.length; i++){
             const node = tree[i];
 
-            // let siblings = [];
-            // if (node.parent !== null) {
-            //     siblings = node.parent.children.filter(sibl => sibl !== node);
-            // }
-            // const is_bifurcation = siblings.length > 0;
-            // if (SKIP_BIF && is_bifurcation) continue;
-
-            this.node_to_circle_idx[i] = iter/3;
+            this.node_to_circle_idx[i] = vertexBuf.length;
 
             for (let j = 0; j < CIRCLE_RES; j++) {
                 const point_at_circle = circle(CRICLE_STEP*j, node.width, node.pos, node.binormal(), node.normal);
                 const normal_vector = point_at_circle.minus(node.pos).normalize();
+                const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, node.v);
 
-                const texture_coordinates = new Vec2(
-                    (3-j%3)/3,
-                    node.v
-                );
-
-                uvBuf[iteruv++] = texture_coordinates.x;
-                uvBuf[iteruv++] = texture_coordinates.y;
-
-                // one vertex
-                normalBuf[iter] = normal_vector.x;
-                vertexBuf[iter++] = point_at_circle.x;
-
-                normalBuf[iter] = normal_vector.y;
-                vertexBuf[iter++] = point_at_circle.y;
-
-                normalBuf[iter] = normal_vector.z;
-                vertexBuf[iter++] = point_at_circle.z;
+                vertexBuf.push(point_at_circle);
+                normalBuf.push(normal_vector);
+                uvBuf.push(texture_coordinates);
             }
         }
-        assert(iter === array_len, 'vertex buffer bad size');
 
-
-        const c = new Float32Array(array_len);
-        c.fill(0);
-
-        // // index vbo
+        // index vbo
         this.lineCount = 0;
         for (let node of tree) {
             if (SKIP_CYLINDER_AT_BIFURCATION) {
@@ -142,14 +111,13 @@ class TreeGeometry {
             this.lineCount += node.children.length * 6 * CIRCLE_RES;
         }
 
+
         // element array buffer uses 16 bit unsigned ints
         // so the tree.nodes size must be smaller than 2^16 = 65536
-        assert(tree.length < 65536, 'dude stop');
+        assert(tree.length < 65536, 'too many nodes');
 
-        const indexBuffer = new Uint16Array(this.lineCount);
-        // console.log('indexbuffer length:', this.lineCount);
+        const indexBuf = [];
 
-        iter = 0;
         for (let i = 0; i < tree.length; i++) {
             const node = tree[i];
 
@@ -158,7 +126,6 @@ class TreeGeometry {
                     continue;
                 }
             }
-
 
             for (let child of node.children) {
                 const node_idx  = this.node_to_circle_idx[i];
@@ -169,41 +136,31 @@ class TreeGeometry {
                 }
                 for (let j = 0; j < CIRCLE_RES; j++) {
                     // triangle 1
-                    indexBuffer[iter++] = child_idx + j;
-                    indexBuffer[iter++] = node_idx  + j;
-                    indexBuffer[iter++] = node_idx  + (j+1) % CIRCLE_RES;
+                    indexBuf.push(child_idx + j);
+                    indexBuf.push(node_idx  + j);
+                    indexBuf.push(node_idx  + (j+1) % CIRCLE_RES);
 
                     // triangle 2
-                    indexBuffer[iter++] = child_idx + j;
-                    indexBuffer[iter++] = node_idx  + (j+1) % CIRCLE_RES;
-                    indexBuffer[iter++] = child_idx + (j+1) % CIRCLE_RES;
+                    indexBuf.push(child_idx + j);
+                    indexBuf.push(node_idx  + (j+1) % CIRCLE_RES);
+                    indexBuf.push(child_idx + (j+1) % CIRCLE_RES);
                 }
             }
         }
-        assert(iter === this.lineCount, 'bad indexbuffer size');
-
 
         gl.bindVertexArray(this.vao);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vertexBuf, gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(vertexBuf), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, normalBuf, gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(normalBuf), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, uvBuf, gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, c, gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bufferData(gl.ARRAY_BUFFER, vec2ArrayToFloat32Array(uvBuf), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexBuffer, gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexBuf), gl.STATIC_DRAW);
 
         gl.bindVertexArray(null);
     }
