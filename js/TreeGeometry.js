@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 4;
+const CIRCLE_RES = 6;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
 
@@ -38,22 +38,16 @@ class TreeGeometry {
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+        this.normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
         gl.enableVertexAttribArray(1);
         gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.normalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
         this.textureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
-        gl.enableVertexAttribArray(3);
-        gl.vertexAttribPointer(3, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         // element array buffer

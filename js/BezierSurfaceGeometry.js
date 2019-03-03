@@ -19,8 +19,8 @@ class BezierSurfaceGeometry {
 
         this.normalBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(1);
+        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         gl.bindVertexArray(null);

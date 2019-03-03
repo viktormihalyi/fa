@@ -2,6 +2,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     precision highp float;
 
     in vec2 uv;
+    in vec3 normal;
 
     out vec4 fragmentColor;
 
@@ -9,10 +10,15 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     uniform sampler2D leaves_alpha;
 
     void main(void) {
+
         float alpha = texture(leaves_alpha, uv).r;
         if (alpha < 0.05) {
             discard;
         }
+        vec3 N = normalize(normal);
+
         fragmentColor = vec4(texture(leaves, uv).rgb, alpha);
+        // fragmentColor = vec4(N*0.5+0.5, 1);
+        // fragmentColor = vec4(1, 0, 0, 1);
     }
 `;

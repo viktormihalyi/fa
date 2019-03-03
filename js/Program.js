@@ -9,8 +9,6 @@ class Program {
 
         for (const attrib of attribLocations) {
             gl.bindAttribLocation(this.glProgram, attrib.position, attrib.name);
-            gl.bindAttribLocation(this.glProgram, 2, 'vertexNormal');
-            gl.bindAttribLocation(this.glProgram, 3, 'vertexTexCoord');
         }
 
         gl.linkProgram(this.glProgram);

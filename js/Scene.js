@@ -39,21 +39,21 @@ class Scene {
         // gl.enable(gl.BLEND);
         // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        const vsIdle = new Shader(gl, gl.VERTEX_SHADER, 'vertex.essl');
-        const fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, 'fragment.essl');
+        const vsIdle = new Shader(gl, gl.VERTEX_SHADER, 'tree.vert');
+        const fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, 'tree.frag');
         this.solidProgram = new Program(gl, vsIdle, fsSolid, [
             {position: 0, name: 'vertexPosition' },
-            {position: 2, name: 'vertexNormal' },
-            {position: 3, name: 'vertexTexCoord' },
+            {position: 1, name: 'vertexNormal' },
+            {position: 2, name: 'vertexTexCoord' },
         ]);
 
-        const vs = new Shader(gl, gl.VERTEX_SHADER, 'vertex_leaves.essl');
-        const fs = new Shader(gl, gl.FRAGMENT_SHADER, 'fragment_leaves.essl');
+        const vs = new Shader(gl, gl.VERTEX_SHADER, 'leaves.vert');
+        const fs = new Shader(gl, gl.FRAGMENT_SHADER, 'leaves.frag');
         this.leavesShader = new Program(gl, vs, fs, [
             {position: 0, name: 'vertexPosition' },
-            {position: 2, name: 'vertexNormal' },
-            {position: 3, name: 'vertexTexCoord' },
-            {position: 4, name: 'modelM' },
+            {position: 1, name: 'vertexNormal' },
+            {position: 2, name: 'vertexTexCoord' },
+            {position: 3, name: 'modelM' },
         ]);
 
         this.uniforms = {};
@@ -66,6 +66,64 @@ class Scene {
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
         this.leaves = new QuadGeometry(gl);
+
+        this.spheres = new SphereGeometry(gl);
+
+        function generateScalarFieldFromMetaballs(metaballs, from, to, out_scalarField, out_points) {
+            for (let z = from.x; z < to.x; z++) {
+                for (let y = from.y; y < to.y; y++) {
+                    for (let x = from.z; x < to.z; x++) {
+                        const currentPos = new Vec3(x, y, z);
+                        out_points.push(currentPos);
+
+                        let sum = 0;
+                        metaballs.forEach(ball => {
+                            const distance = currentPos.minus(ball.pos).length();
+                            sum += 1 / distance;
+                        });
+                        out_scalarField.push(sum);
+                    }
+                }
+            }
+        }
+
+
+
+
+        if (true) setTimeout(() => {
+            const first_bifurcation = null;
+            for (const node of this.tree.nodes) {
+                if (node.children > 1) {
+                    first_bifurcation = node;
+                    break;
+                }
+            }
+
+
+            let metaballs = this.tree.nodes
+                .filter(node => node.pos.y > 0)
+                .map(node => {
+                    return {
+                        pos: node.pos,
+                        r: node.width
+                    }
+                });
+
+
+            const threshold = 1.2;
+            let scalarField = [];
+            let points = [];
+
+            const from = new Vec3(20, 180, 10);
+            const to = from.plus(new Vec3(70, 70, 70));
+            generateScalarFieldFromMetaballs(metaballs, from, to, scalarField, points);
+
+
+            this.mq = new MarchingCubesGeometry(gl, scalarField, points, 70, threshold);
+        }, 2000);
+
+
+        // this.spheres.setModelMatrices(m);
 
 
         this.camera = new PerspectiveCamera();
@@ -143,6 +201,8 @@ class Scene {
 
         this.solidProgram.commit();
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
+        if (this.mq)
+        this.mq.draw();
 
         if (this.mode === 2) {
             this.treeGeometry.draw(true);
@@ -158,7 +218,10 @@ class Scene {
 
         this.leavesShader.commit();
         UniformReflection.commitProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
-        this.leaves.draw();
+        // this.leaves.draw();
+        // this.spheres.draw();
+
+
     }
 
     onresize(width, height) {

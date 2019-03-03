@@ -44,12 +44,12 @@ class QuadGeometry {
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexNormalBuffer);
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(1);
+        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTexCoordBuffer);
-        gl.enableVertexAttribArray(3);
-        gl.vertexAttribPointer(3, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
 
         const vec4size = 4*4;
 
@@ -57,19 +57,19 @@ class QuadGeometry {
         this.modelMatrices = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.modelMatrices);
 
+        gl.enableVertexAttribArray(3);
+        gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 4*vec4size, 0);
         gl.enableVertexAttribArray(4);
-        gl.vertexAttribPointer(4, 4, gl.FLOAT, false, 4*vec4size, 0);
+        gl.vertexAttribPointer(4, 4, gl.FLOAT, false, 4*vec4size, 1*vec4size);
         gl.enableVertexAttribArray(5);
-        gl.vertexAttribPointer(5, 4, gl.FLOAT, false, 4*vec4size, 1*vec4size);
+        gl.vertexAttribPointer(5, 4, gl.FLOAT, false, 4*vec4size, 2*vec4size);
         gl.enableVertexAttribArray(6);
-        gl.vertexAttribPointer(6, 4, gl.FLOAT, false, 4*vec4size, 2*vec4size);
-        gl.enableVertexAttribArray(7);
-        gl.vertexAttribPointer(7, 4, gl.FLOAT, false, 4*vec4size, 3*vec4size);
+        gl.vertexAttribPointer(6, 4, gl.FLOAT, false, 4*vec4size, 3*vec4size);
 
+        gl.vertexAttribDivisor(3, 1);
         gl.vertexAttribDivisor(4, 1);
         gl.vertexAttribDivisor(5, 1);
         gl.vertexAttribDivisor(6, 1);
-        gl.vertexAttribDivisor(7, 1);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         gl.bindVertexArray(null);
