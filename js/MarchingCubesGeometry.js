@@ -294,7 +294,7 @@ const triTable = new Int32Array([
 
 
 class MarchingCubesGeometry {
-    constructor(gl, scalarField, points, size, isolevel) {
+    constructor(gl, scalarField, from, to, isolevel, res) {
         this.gl = gl;
 
         this.vao = gl.createVertexArray();
@@ -330,27 +330,38 @@ class MarchingCubesGeometry {
         const indices = [];
         const uvs = [];
 
-        function lerpVec3(vec0, vec1, t) {
-            return new Vec3(
-                lerp(vec0.x, vec1.x, t),
-                lerp(vec0.y, vec1.y, t),
-                lerp(vec0.z, vec1.z, t),
-            );
+        const sizex = (to.x - from.x) / res;
+        const sizey = (to.y - from.y) / res;
+        const sizez = (to.z - from.z) / res;
+
+        let points = new Array(scalarField.length);
+        let iter = 0;
+        for (let z = 0; z < sizez; z++) {
+            for (let y = 0; y < sizey; y++) {
+                for (let x = 0; x < sizex; x++) {
+                    points[iter++] = new Vec3(x, y, z);
+                }
+            }
+        }
+        console.log(points);
+
+        function at(x, y, z) {
+            return x + sizex * y + sizey*sizex * z;
         }
 
         let vertexIndex = 0;
-        for (let z = 0; z < size - 1; z++) {
-            for (let y = 0; y < size - 1; y++) {
-                for (let x = 0; x < size - 1; x++) {
+        for (let z = 0; z < sizez - 1; z++) {
+            for (let y = 0; y < sizey - 1; y++) {
+                for (let x = 0; x < sizex - 1; x++) {
 
-                    const p    = x + size * y + size*size * z;
-                    const px   = p   + 1;
-                    const py   = p   + size;
-                    const pxy  = py  + 1;
-                    const pz   = p   + size*size;
-                    const pxz  = px  + size*size;
-                    const pyz  = py  + size*size;
-                    const pxyz = pxy + size*size;
+                    const p    = at(x  , y  , z  );
+                    const px   = at(x+1, y  , z  );
+                    const py   = at(x  , y+1, z  );
+                    const pxy  = at(x+1, y+1, z  );
+                    const pz   = at(x  , y  , z+1);
+                    const pxz  = at(x+1, y  , z+1);
+                    const pyz  = at(x  , y+1, z+1);
+                    const pxyz = at(x+1, y+1, z+1);
 
                     const value0 = scalarField[ p    ];
                     const value1 = scalarField[ px   ];
@@ -475,7 +486,7 @@ class MarchingCubesGeometry {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
         // gl.drawElements(gl.LINES, this.indexCount, gl.UNSIGNED_SHORT, 0);
-        gl.drawArrays(gl.LINES, this.vertexBuffer, this.indexCount);
+        gl.drawArrays(gl.TRIANGLES, this.vertexBuffer, this.indexCount);
 
         gl.bindVertexArray(null);
     }

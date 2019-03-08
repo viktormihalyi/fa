@@ -36,6 +36,7 @@ function tj(ti, pi, pj) {
 
 class Scene {
     constructor(gl) {
+        this.gl = gl;
         // gl.enable(gl.BLEND);
         // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -69,57 +70,71 @@ class Scene {
 
         this.spheres = new SphereGeometry(gl);
 
-        function generateScalarFieldFromMetaballs(metaballs, from, to, out_scalarField, out_points) {
-            for (let z = from.x; z < to.x; z++) {
-                for (let y = from.y; y < to.y; y++) {
-                    for (let x = from.z; x < to.z; x++) {
-                        const currentPos = new Vec3(x, y, z);
-                        out_points.push(currentPos);
+        function func(position, segments) {
+            for (const seg of segments) {
+                const d = distanceToLineSegment2(position, seg[0], seg[1]);
+                if (d <= 10) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
 
-                        let sum = 0;
-                        metaballs.forEach(ball => {
-                            const distance = currentPos.minus(ball.pos).length();
-                            sum += 1 / distance;
-                        });
-                        out_scalarField.push(sum);
+        function generateScalarFieldFromMetaballs(treeNodes, from, to, out_scalarField, res) {
+            console.log('generating scalar filed');
+
+            const segments = treeNodes.flatMap(node => {
+                return node.children.map(child => {
+                    const dirToChild = child.pos.minus(node.pos);
+                    const dirToParent = node.pos.minus(child.pos);
+                    return [node.pos.plus(dirToChild.times(0.25)), child.pos.plus(dirToParent.times(0.25)), node.width];
+                });
+            });
+
+            const start = new Date();
+
+            for (let z = from.z; z < to.z; z+=res) {
+                console.log(`z=${z}`);
+                for (let y = from.y; y < to.y; y+=res) {
+                    for (let x = from.x; x < to.x; x+=res) {
+                        const currentPos = new Vec3(x, y, z);
+
+                        let val = 0;
+                        for (const seg of segments) {
+                            const dist = distanceToLineSegment2(currentPos, seg[0], seg[1])
+                            if (dist <= res) {
+                                val = 1;
+                                break;
+                            }
+                            // val += 1 / dist;
+                            // if (distanceToLineSegment2(currentPos, seg[0], seg[1]) <= res) {
+                            //     val = 1;
+                            //     break;
+                            // }
+                        }
+                        out_scalarField.push(val);
+
                     }
                 }
             }
+
+            const end = new Date();
+            console.log(`genarting scalar field took ${end-start} ms`);
         }
 
 
-
-
         if (true) setTimeout(() => {
-            const first_bifurcation = null;
-            for (const node of this.tree.nodes) {
-                if (node.children > 1) {
-                    first_bifurcation = node;
-                    break;
-                }
-            }
+            const threshold = .1;
 
+            const from = new Vec3(-600, 0, -600);
+            const to = new Vec3(600, 600, 600);
+            const res = 15;
 
-            let metaballs = this.tree.nodes
-                .filter(node => node.pos.y > 0)
-                .map(node => {
-                    return {
-                        pos: node.pos,
-                        r: node.width
-                    }
-                });
+            this.scalarField = [];
 
+            generateScalarFieldFromMetaballs(this.tree.nodes, from, to, this.scalarField, res);
 
-            const threshold = 1.2;
-            let scalarField = [];
-            let points = [];
-
-            const from = new Vec3(20, 180, 10);
-            const to = from.plus(new Vec3(70, 70, 70));
-            generateScalarFieldFromMetaballs(metaballs, from, to, scalarField, points);
-
-
-            this.mq = new MarchingCubesGeometry(gl, scalarField, points, 70, threshold);
+            this.mq = new MarchingCubesGeometry(gl, this.scalarField, from, to, threshold, res);
         }, 2000);
 
 
@@ -218,10 +233,9 @@ class Scene {
 
         this.leavesShader.commit();
         UniformReflection.commitProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
-        // this.leaves.draw();
+        // this.leaves.draw();d
+
         // this.spheres.draw();
-
-
     }
 
     onresize(width, height) {
