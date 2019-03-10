@@ -123,19 +123,19 @@ class Scene {
         }
 
 
-        if (true) setTimeout(() => {
+        if (false) setTimeout(() => {
             const threshold = .1;
 
             const from = new Vec3(-600, 0, -600);
             const to = new Vec3(600, 600, 600);
-            const res = 15;
+            const res = 10;
 
             this.scalarField = [];
 
             generateScalarFieldFromMetaballs(this.tree.nodes, from, to, this.scalarField, res);
 
             this.mq = new MarchingCubesGeometry(gl, this.scalarField, from, to, threshold, res);
-        }, 2000);
+        }, 3000);
 
 
         // this.spheres.setModelMatrices(m);
@@ -162,7 +162,7 @@ class Scene {
 
         this.mode = 1;
 
-        this.bs = new BezierSurfaceGeometry(gl);
+        // this.bs = new BezierSurfaceGeometry(gl);
     }
 
     update(gl, keysPressed) {
@@ -218,6 +218,8 @@ class Scene {
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
         if (this.mq)
         this.mq.draw();
+        if (this.bs)
+        this.bs.draw();
 
         if (this.mode === 2) {
             this.treeGeometry.draw(true);

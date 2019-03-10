@@ -339,7 +339,7 @@ class MarchingCubesGeometry {
         for (let z = 0; z < sizez; z++) {
             for (let y = 0; y < sizey; y++) {
                 for (let x = 0; x < sizex; x++) {
-                    points[iter++] = new Vec3(x, y, z);
+                    points[iter++] = new Vec3(x, y, z).add(from.over(res)).mul(res);
                 }
             }
         }
@@ -451,6 +451,7 @@ class MarchingCubesGeometry {
                         const index3 = triTable[cubeindex + i + 2];
 
                         vertices.push(vlist[index1].clone(), vlist[index2].clone(), vlist[index3].clone());
+                        normals.push( vlist[index1].clone(), vlist[index2].clone(), vlist[index3].clone());
                         indices.push( vertexIndex+0,         vertexIndex+1,         vertexIndex+2);
                         uvs.push(     new Vec2(0, 0),        new Vec2(0, 1),        new Vec2(1, 1));
 
@@ -468,7 +469,7 @@ class MarchingCubesGeometry {
         gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(vertices), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(vertices.map(e => new Vec3(1, 0, 1))), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(normals), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vec2ArrayToFloat32Array(uvs), gl.STATIC_DRAW);
