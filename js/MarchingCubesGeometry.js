@@ -479,7 +479,7 @@ class MarchingCubesGeometry {
 
     }
 
-    draw() {
+    draw(debug) {
         const gl = this.gl;
 
         gl.bindVertexArray(this.vao);
@@ -487,7 +487,7 @@ class MarchingCubesGeometry {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
         // gl.drawElements(gl.LINES, this.indexCount, gl.UNSIGNED_SHORT, 0);
-        gl.drawArrays(gl.TRIANGLES, this.vertexBuffer, this.indexCount);
+        gl.drawArrays(debug ? gl.LINES : gl.TRIANGLES, this.vertexBuffer, this.indexCount);
 
         gl.bindVertexArray(null);
     }

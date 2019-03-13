@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 12;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
 

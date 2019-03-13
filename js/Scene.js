@@ -100,18 +100,20 @@ class Scene {
                         const currentPos = new Vec3(x, y, z);
 
                         let val = 0;
+                        let closestDist = Number.MAX_SAFE_INTEGER;
+                        let w = 0;
                         for (const seg of segments) {
-                            const dist = distanceToLineSegment2(currentPos, seg[0], seg[1])
+                            const dist = distanceToLineSegment2(currentPos, seg[0], seg[1]);
+                            // if (dist < closestDist) {
+                            //     closestDist = dist;
+                            //     w = seg[2];
+                            // }
                             if (dist <= res) {
                                 val = 1;
                                 break;
                             }
-                            // val += 1 / dist;
-                            // if (distanceToLineSegment2(currentPos, seg[0], seg[1]) <= res) {
-                            //     val = 1;
-                            //     break;
-                            // }
                         }
+                        // val += w / closestDist;
                         out_scalarField.push(val);
 
                     }
@@ -119,23 +121,23 @@ class Scene {
             }
 
             const end = new Date();
-            console.log(`genarting scalar field took ${end-start} ms`);
+            console.log(`generating scalar field took ${end-start} ms`);
         }
 
 
         if (false) setTimeout(() => {
-            const threshold = .1;
+            const threshold = 0.2;
 
             const from = new Vec3(-600, 0, -600);
             const to = new Vec3(600, 600, 600);
-            const res = 10;
+            const res = 25;
 
             this.scalarField = [];
 
             generateScalarFieldFromMetaballs(this.tree.nodes, from, to, this.scalarField, res);
 
             this.mq = new MarchingCubesGeometry(gl, this.scalarField, from, to, threshold, res);
-        }, 3000);
+        }, 2000);
 
 
         // this.spheres.setModelMatrices(m);
@@ -162,7 +164,7 @@ class Scene {
 
         this.mode = 1;
 
-        // this.bs = new BezierSurfaceGeometry(gl);
+        this.bs = new BezierSurfaceGeometry(gl);
     }
 
     update(gl, keysPressed) {
@@ -216,16 +218,12 @@ class Scene {
 
         this.solidProgram.commit();
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
-        if (this.mq)
-        this.mq.draw();
-        if (this.bs)
-        this.bs.draw();
+
+        if (this.mq) this.mq.draw(this.mode === 2);
+        this.treeGeometry.draw(this.mode === 2);
 
         if (this.mode === 2) {
-            this.treeGeometry.draw(true);
             this.frenetGeometry.draw();
-        } else {
-            this.treeGeometry.draw();
         }
 
         // render leaves
