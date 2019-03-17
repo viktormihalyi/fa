@@ -29,6 +29,11 @@ function pv(vec) {
     return `(${round_to_tenths(vec.x)}, ${round_to_tenths(vec.y)}, ${round_to_tenths(vec.z)})`
 }
 
+
+function project_to_plane(A, plane_normal) {
+    return plane_normal.cross(A.cross(plane_normal));
+}
+
 function furthestPointInDirection(listOfPoints, direction) {
     assert(listOfPoints.length > 0, 'empty array');
 

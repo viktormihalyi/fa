@@ -37,24 +37,31 @@ function tj(ti, pi, pj) {
 class Scene {
     constructor(gl) {
         this.gl = gl;
-        // gl.enable(gl.BLEND);
-        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         const vsIdle = new Shader(gl, gl.VERTEX_SHADER, 'tree.vert');
         const fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, 'tree.frag');
         this.solidProgram = new Program(gl, vsIdle, fsSolid, [
-            {position: 0, name: 'vertexPosition' },
-            {position: 1, name: 'vertexNormal' },
-            {position: 2, name: 'vertexTexCoord' },
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
         ]);
 
         const vs = new Shader(gl, gl.VERTEX_SHADER, 'leaves.vert');
         const fs = new Shader(gl, gl.FRAGMENT_SHADER, 'leaves.frag');
         this.leavesShader = new Program(gl, vs, fs, [
-            {position: 0, name: 'vertexPosition' },
-            {position: 1, name: 'vertexNormal' },
-            {position: 2, name: 'vertexTexCoord' },
-            {position: 3, name: 'modelM' },
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+            { position: 3, name: 'modelM' },
+        ]);
+
+        const fvs = new Shader(gl, gl.VERTEX_SHADER, 'frenet.vert');
+        const ffs = new Shader(gl, gl.FRAGMENT_SHADER, 'frenet.frag');
+        this.frenetShader = new Program(gl, fvs, ffs, [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexColor' },
         ]);
 
         this.uniforms = {};
@@ -63,6 +70,9 @@ class Scene {
         this.uniforms_leaves = {};
         UniformReflection.addProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
 
+        this.uniforms_frenet = {};
+        UniformReflection.addProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
+
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
@@ -70,72 +80,72 @@ class Scene {
 
         this.spheres = new SphereGeometry(gl);
 
-        function func(position, segments) {
-            for (const seg of segments) {
-                const d = distanceToLineSegment2(position, seg[0], seg[1]);
-                if (d <= 10) {
-                    return 1;
-                }
-            }
-            return 0;
-        }
+        // function func(position, segments) {
+        //     for (const seg of segments) {
+        //         const d = distanceToLineSegment2(position, seg[0], seg[1]);
+        //         if (d <= 10) {
+        //             return 1;
+        //         }
+        //     }
+        //     return 0;
+        // }
 
-        function generateScalarFieldFromMetaballs(treeNodes, from, to, out_scalarField, res) {
-            console.log('generating scalar filed');
+        // function generateScalarFieldFromMetaballs(treeNodes, from, to, out_scalarField, res) {
+        //     console.log('generating scalar filed');
 
-            const segments = treeNodes.flatMap(node => {
-                return node.children.map(child => {
-                    const dirToChild = child.pos.minus(node.pos);
-                    const dirToParent = node.pos.minus(child.pos);
-                    return [node.pos.plus(dirToChild.times(0.25)), child.pos.plus(dirToParent.times(0.25)), node.width];
-                });
-            });
+        //     const segments = treeNodes.flatMap(node => {
+        //         return node.children.map(child => {
+        //             const dirToChild = child.pos.minus(node.pos);
+        //             const dirToParent = node.pos.minus(child.pos);
+        //             return [node.pos.plus(dirToChild.times(0.25)), child.pos.plus(dirToParent.times(0.25)), node.width];
+        //         });
+        //     });
 
-            const start = new Date();
+        //     const start = new Date();
 
-            for (let z = from.z; z < to.z; z+=res) {
-                console.log(`z=${z}`);
-                for (let y = from.y; y < to.y; y+=res) {
-                    for (let x = from.x; x < to.x; x+=res) {
-                        const currentPos = new Vec3(x, y, z);
+        //     for (let z = from.z; z < to.z; z+=res) {
+        //         console.log(`z=${z}`);
+        //         for (let y = from.y; y < to.y; y+=res) {
+        //             for (let x = from.x; x < to.x; x+=res) {
+        //                 const currentPos = new Vec3(x, y, z);
 
-                        let val = 0;
-                        for (const seg of segments) {
-                            const dist = distanceToLineSegment2(currentPos, seg[0], seg[1])
-                            if (dist <= res) {
-                                val = 1;
-                                break;
-                            }
-                            // val += 1 / dist;
-                            // if (distanceToLineSegment2(currentPos, seg[0], seg[1]) <= res) {
-                            //     val = 1;
-                            //     break;
-                            // }
-                        }
-                        out_scalarField.push(val);
+        //                 let val = 0;
+        //                 for (const seg of segments) {
+        //                     const dist = distanceToLineSegment2(currentPos, seg[0], seg[1])
+        //                     if (dist <= res) {
+        //                         val = 1;
+        //                         break;
+        //                     }
+        //                     // val += 1 / dist;
+        //                     // if (distanceToLineSegment2(currentPos, seg[0], seg[1]) <= res) {
+        //                     //     val = 1;
+        //                     //     break;
+        //                     // }
+        //                 }
+        //                 out_scalarField.push(val);
 
-                    }
-                }
-            }
+        //             }
+        //         }
+        //     }
 
-            const end = new Date();
-            console.log(`genarting scalar field took ${end-start} ms`);
-        }
+        //     const end = new Date();
+        //     console.log(`genarting scalar field took ${end-start} ms`);
+        // }
 
 
-        if (false) setTimeout(() => {
-            const threshold = .1;
+        // if (false) setTimeout(() => {
+        //     const threshold = .1;
 
-            const from = new Vec3(-600, 0, -600);
-            const to = new Vec3(600, 600, 600);
-            const res = 10;
+        //     const from = new Vec3(-600, 0, -600);
+        //     const to = new Vec3(600, 600, 600);
+        //     const res = 10;
 
-            this.scalarField = [];
+        //     this.scalarField = [];
 
-            generateScalarFieldFromMetaballs(this.tree.nodes, from, to, this.scalarField, res);
+        //     generateScalarFieldFromMetaballs(this.tree.nodes, from, to, this.scalarField, res);
 
-            this.mq = new MarchingCubesGeometry(gl, this.scalarField, from, to, threshold, res);
-        }, 3000);
+        //     this.mq = new MarchingCubesGeometry(gl, this.scalarField, from, to, threshold, res);
+        // }, 3000);
 
 
         // this.spheres.setModelMatrices(m);
@@ -162,7 +172,7 @@ class Scene {
 
         this.mode = 1;
 
-        // this.bs = new BezierSurfaceGeometry(gl);
+        this.bs = new BezierSurfaceGeometry(gl);
     }
 
     update(gl, keysPressed) {
@@ -180,7 +190,7 @@ class Scene {
             if (this.tree.nodes.length !== this.last_tree_count) {
                 this.treeGeometry.setPoints(this.tree.nodes);
                 this.frenetGeometry.setPoints(this.tree.nodes);
-                // this.bs.setTree(this.tree);
+                this.bs.setTree(this.tree);
 
                 const modelMatrices = [];
                 for (const node of this.tree.nodes) {
@@ -216,13 +226,16 @@ class Scene {
 
         this.solidProgram.commit();
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
-        if (this.mq)
-        this.mq.draw();
-        if (this.bs)
-        this.bs.draw();
+
+        if (this.mq) this.mq.draw();
+        if (this.bs) this.bs.draw();
 
         if (this.mode === 2) {
             this.treeGeometry.draw(true);
+
+            this.frenetShader.commit();
+            UniformReflection.commitProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
+
             this.frenetGeometry.draw();
         } else {
             this.treeGeometry.draw();
@@ -235,7 +248,7 @@ class Scene {
 
         this.leavesShader.commit();
         UniformReflection.commitProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
-        // this.leaves.draw();d
+        // this.leaves.draw();
 
         // this.spheres.draw();
     }

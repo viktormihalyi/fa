@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 8;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
 
@@ -21,6 +21,14 @@ function circle(theta, r, center, a, b) {
         .plus(b.times(Math.sin(theta)))
         .times(r)
         .plus(center);
+}
+
+function getCirclePointsForNode(node) {
+    const points = [];
+    for (let j = 0; j < CIRCLE_RES; j++) {
+        points.push(circle(CRICLE_STEP*j, node.width, node.pos, node.binormal(), node.normal));
+    }
+    return points;
 }
 
 class TreeGeometry {
@@ -83,12 +91,12 @@ class TreeGeometry {
 
             this.node_to_circle_idx[i] = vertexBuf.length;
 
+            const circle_points = getCirclePointsForNode(node);
             for (let j = 0; j < CIRCLE_RES; j++) {
-                const point_at_circle = circle(CRICLE_STEP*j, node.width, node.pos, node.binormal(), node.normal);
-                const normal_vector = point_at_circle.minus(node.pos).normalize();
+                const normal_vector = circle_points[j].minus(node.pos).normalize();
                 const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, node.v);
 
-                vertexBuf.push(point_at_circle);
+                vertexBuf.push(circle_points[j]);
                 normalBuf.push(normal_vector);
                 uvBuf.push(texture_coordinates);
             }

@@ -5,7 +5,9 @@ function addVec3ToFloat32Array(float32Array, vec3, index) {
 }
 
 
-function getBezierPoints(bsurface, BN, BM, resolution, vertices, normals) {
+function getBezierPoints(bspoints, BN, BM, resolution, vertices, normals) {
+    const bsurface = new BezierSurface(bspoints, BN, BM);
+
     const N = BN * resolution;
     const M = BM * resolution;
 
@@ -139,72 +141,73 @@ class BezierSurfaceGeometry {
     }
 
     setTree(tree) {
+
+
         console.log('recalculating bezier');
         const gl = this.gl;
 
         const f = [];
         const fn = [];
 
-        for (const node of tree.nodes) {
-            const bifurcation = node.children.length > 1;
+
+        for (const parent of tree.nodes) {
+            const bifurcation = parent.children.length === 2;
+
             if (bifurcation) {
-                console.log('bif!');
-                const child1 = node.children[0];
-                const child2 = node.children[1];
+                const childA = parent.children[0];
+                const childB = parent.children[1];
 
-                const how = 2;
+                const parent_circle_points = getCirclePointsForNode(parent);
+                const childA_circle_points = getCirclePointsForNode(childA);
+                const childB_circle_points = getCirclePointsForNode(childB);
 
-                const child1points = [];
-                const child2points = [];
-                for (let j = 0; j < CIRCLE_RES; j++) {
-                    child1points.push(circle(CRICLE_STEP*j, child1.width, child1.pos, child1.binormal(), child1.normal));
-                    child2points.push(circle(CRICLE_STEP*j, child2.width, child2.pos, child2.binormal(), child2.normal));
-                }
+                const childA_to_childB = childB.pos.minus(childA.pos).normalize();
+                const childB_to_childA = childA.pos.minus(childB.pos).normalize();
 
-                let combinations = [];
-                child1points.forEach(p1 => {
-                    child2points.forEach(p2 => {
-                        combinations.push({
-                            p1: p1,
-                            p2: p2,
-                            distance: p1.minus(p2).length(),
-                        });
-                    });
-                });
+                const parent_tangent = parent.dir;
+                // parents's normal and binormal so that they are the same across all bifurcations
+                // http://www.euclideanspace.com/maths/geometry/elements/plane/lineOnPlane/
+                const parent_normal = project_to_plane(childA_to_childB, parent_tangent).normalize();
+                const parent_binormal = parent_tangent.cross(parent_normal).normalize();
 
-                // first point is the closest to each other
-                combinations.sort((a, b) => a.distance - b.distance);
-                const closestCombos = [];
-                while (closestCombos.length < how) {
-                    const cc = combinations[0];
-                    closestCombos.push(cc);
-                    combinations = combinations.filter(combo => combo.p1 !== cc.p1 && combo.p2 !== cc.p2);
-                }
+                const childA_tangent = childA.dir;
+                const childA_normal = project_to_plane(childA_to_childB, childA_tangent).normalize();
+                const childA_binormal = childA_tangent.cross(childA_normal).normalize();
 
-                const closestPoints = closestCombos.flatMap(c => [c.p1, c.p2]);
+                const childB_tangent = childB.dir;
+                const childB_normal = project_to_plane(childA_to_childB, childB_tangent).normalize();
+                const childB_binormal = childB_tangent.cross(childB_normal).normalize();
 
-                console.log(closestPoints);
+                const p_parent_normal    = furthestPointInDirection(parent_circle_points, parent_normal);
+                const p_parent_binormal  = furthestPointInDirection(parent_circle_points, parent_binormal);
+                const p_parent_inormal   = furthestPointInDirection(parent_circle_points, parent_normal.times(-1));
+                const p_parent_ibinormal = furthestPointInDirection(parent_circle_points, parent_binormal.times(-1));
 
-                const BN = how;
-                const BM = 2;
+                const p_childA_normal    = furthestPointInDirection(childA_circle_points, childA_normal);
+                const p_childA_binormal  = furthestPointInDirection(childA_circle_points, childA_binormal);
+                const p_childA_inormal   = furthestPointInDirection(childA_circle_points, childA_normal.times(-1));
+                const p_childA_ibinormal = furthestPointInDirection(childA_circle_points, childA_binormal.times(-1));
 
-                let bsurface = new BezierSurface(closestPoints, BN, BM);
+                const p_childB_normal    = furthestPointInDirection(childB_circle_points, childB_normal);
+                const p_childB_binormal  = furthestPointInDirection(childB_circle_points, childB_binormal);
+                const p_childB_inormal   = furthestPointInDirection(childB_circle_points, childB_normal.times(-1));
+                const p_childB_ibinormal = furthestPointInDirection(childB_circle_points, childB_binormal.times(-1));
 
+                getBezierPoints([
+                    p_parent_normal, p_parent_binormal,
+                    p_childB_normal, p_childB_binormal,
+                ], 2, 2, 1, f, fn);
 
-                const vertices = [];
-                const normals = [];
-                getBezierPoints(bsurface, BN, BM, 1, vertices, normals);
-                vertices.forEach(v => f.push(v));
-                normals.forEach(n => fn.push(n));
-
+                getBezierPoints([
+                    p_parent_normal, p_parent_ibinormal,
+                    p_childB_normal, p_childB_ibinormal
+                ], 2, 2, 1, f, fn);
             }
         }
 
         this.vertexCount = f.length;
-        console.log(f);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        console.log(`buffering ${f.length} vertices`);
         gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(f), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
