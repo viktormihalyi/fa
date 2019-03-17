@@ -227,7 +227,6 @@ class Scene {
         this.solidProgram.commit();
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
 
-<<<<<<< HEAD
         if (this.mq) this.mq.draw();
         if (this.bs) this.bs.draw();
 
@@ -237,12 +236,6 @@ class Scene {
             this.frenetShader.commit();
             UniformReflection.commitProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
 
-=======
-        if (this.mq) this.mq.draw(this.mode === 2);
-        this.treeGeometry.draw(this.mode === 2);
-
-        if (this.mode === 2) {
->>>>>>> 72248656a67fc7963719cf973ae6a797102177e3
             this.frenetGeometry.draw();
         }
 
