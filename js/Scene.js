@@ -173,6 +173,12 @@ class Scene {
         this.mode = 1;
 
         this.bs = new BezierSurfaceGeometry(gl);
+
+        for (let i = 0; i < 100; i++) {
+            this.tree.grow();
+        }
+        this.tree.spline(2);
+        this.tree.remove_intersecting_nodes(1.1);
     }
 
     update(gl, keysPressed) {
@@ -185,7 +191,6 @@ class Scene {
         if (timeAtThisFrame - this.lastGrowth > 33) {
             this.lastGrowth = timeAtThisFrame;
 
-            this.tree.grow();
 
             if (this.tree.nodes.length !== this.last_tree_count) {
                 this.treeGeometry.setPoints(this.tree.nodes);
@@ -228,16 +233,13 @@ class Scene {
         UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
 
         if (this.mq) this.mq.draw();
-        if (this.bs) this.bs.draw();
+        if (this.bs) this.bs.draw(this.mode === 2);
 
-        if (this.mode === 2) {
-            this.treeGeometry.draw(true);
+        this.treeGeometry.draw(this.mode === 2);
 
-            this.frenetShader.commit();
-            UniformReflection.commitProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
-
-            this.frenetGeometry.draw();
-        }
+        this.frenetShader.commit();
+        UniformReflection.commitProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
+        this.frenetGeometry.draw();
 
         // render leaves
 

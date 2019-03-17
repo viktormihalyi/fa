@@ -64,12 +64,14 @@ class BezierSurface {
         return BezierSurface._evalBezierCurve(Pu, v);
     }
 
+    // TODO fix
     _duBezier(u, v) {
         let p1 = this.pointAt(u, v);
         let p2 = this.pointAt(u + this.EPSILON, v);
         return p2.minus(p1).normalize();
     }
 
+    // TODO fix
     _dvBezier(u, v) {
         let p1 = this.pointAt(u, v);
         let p2 = this.pointAt(u, v + this.EPSILON);
@@ -79,7 +81,7 @@ class BezierSurface {
     // u: [0, 1]
     // v: [0, 1]
     normalAt(u, v) {
-        return     this._duBezier( u, v)
+        return     this._duBezier(u, v)
             .cross(this._dvBezier(u, v))
             .normalize();
     }

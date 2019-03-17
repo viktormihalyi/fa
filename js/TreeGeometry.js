@@ -5,7 +5,7 @@
 // each circle will be made of this many vertices
 const CIRCLE_RES = 8;
 
-const SKIP_CYLINDER_AT_BIFURCATION = false;
+const SKIP_CYLINDER_AT_BIFURCATION = true;
 
 const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 

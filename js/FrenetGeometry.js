@@ -45,7 +45,7 @@ class FrenetGeometry {
             let binormal = node.binormal().times(VEC_LENGTH);
 
             if (node.children.length === 2) {
-                const childA_to_childB = node.children[0].pos.minus(node.children[1].pos).normalize();
+                const childA_to_childB = node.children[1].pos.minus(node.children[0].pos).normalize();
                 normal = project_to_plane(childA_to_childB, node.dir).normalize().times(VEC_LENGTH);
                 binormal = node.dir.cross(normal).normalize().times(VEC_LENGTH);
             }
