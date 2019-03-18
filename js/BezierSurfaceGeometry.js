@@ -8,7 +8,7 @@ function addVec3ToFloat32Array(float32Array, vec3, index) {
 function getBezierPoints(bspoints, BN, BM, resolution, vertices, normals) {
     const bsurface = new BezierSurface(bspoints, BN, BM);
 
-    const N = BN * resolution;
+    const N = BN;
     const M = BM * resolution;
 
     for (let i = 0; i < N; i++) {
@@ -221,8 +221,12 @@ class BezierSurfaceGeometry {
                         parent_sel[i], parent_sel[i+1],
                         // midpoint, midpoint,
                         childB_sel[i], childB_sel[i+1]
-                    ], 2, 2, 3, f, fn);
+                    ], 2, 2, 1, f, fn);
                 }
+                // getBezierPoints([
+                //     ...parent_sel,
+                //     ...childB_sel
+                // ], 2, parent_sel.length, 2, f, fn);
 
 
                 // parent to childa
@@ -245,7 +249,7 @@ class BezierSurfaceGeometry {
                         parent_sel[i], parent_sel[i+1],
                         // midpoint, midpoint,
                         childB_sel[i], childB_sel[i+1]
-                    ], 2, 2, 3, f, fn);
+                    ], 2, 2, 1, f, fn);
                 }
 
 
