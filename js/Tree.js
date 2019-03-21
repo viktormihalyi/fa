@@ -99,16 +99,50 @@ class Tree {
 
     // return a new node
     // parent is null
-    interpolate_node_between(node, nodes_child, t) {
-        const prev = node.parent || node;
-        const grandchild = nodes_child.getDominantChild() || nodes_child;
+    static interpolate_node_between(nodeA, nodeB, t) {
+        const prev = nodeA.parent || nodeA;
+        const grandchild = nodeB.getDominantChild() || nodeB;
 
-        const interpolated_pos    = catmull_rom_spline(prev.pos,    node.pos,    nodes_child.pos,    grandchild.pos,    t);
-        const interpolated_dir    = catmull_rom_spline(prev.dir,    node.dir,    nodes_child.dir,    grandchild.dir,    t);
-        const interpolated_normal = catmull_rom_spline(prev.normal, node.normal, nodes_child.normal, grandchild.normal, t);
+        const interpolated_pos    = catmull_rom_spline(prev.pos,    nodeA.pos,    nodeB.pos,    grandchild.pos,    t);
+        const interpolated_dir    = catmull_rom_spline(prev.dir,    nodeA.dir,    nodeB.dir,    grandchild.dir,    t);
+        const interpolated_normal = catmull_rom_spline(prev.normal, nodeA.normal, nodeB.normal, grandchild.normal, t);
 
-        return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(node.width, nodes_child.width, t), interpolated_normal);
+        return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(nodeA.width, nodeB.width, t), interpolated_normal);
     }
+
+    // add_imp() {
+    //     console.log('WTF');
+    //     for (const node of this.nodes) {
+    //         if (node.children.length === 2) {
+    //             const childA = node.children[0];
+    //             const childB = node.children[1];
+
+    //             const midpoint = node.pos.plus(childA.pos).plus(childB.pos).over(3);
+
+    //             const midpoint_dir = childB.pos.minus(childA.pos).normalize();
+    //             const midpoint_normal = midpoint.minus(node.pos).cross(midpoint_dir);
+
+    //             let prev = childA;
+    //             for (let t = 0; t <= 1; t += 0.1) {
+
+    //                 if (childA.children.length === 0) continue;
+    //                 const interp_pos = catmull_rom_spline(childA.children[0].pos, childA.pos, midpoint, childB.pos, t);
+    //                 const interp_dir = catmull_rom_spline(childA.children[0].dir, childA.dir, midpoint_dir, childB.dir, t);
+    //                 const interp_normal = catmull_rom_spline(childA.children[0].normal, childA.normal, midpoint_normal, childB.normal, t);
+    //                 const width = lerp(childA.width, childB.width, t/2);
+    //                 const nn = new TreeNode(null, interp_pos, interp_dir, width, interp_normal);
+
+    //                 nn.parent = prev;
+    //                 prev.children.push(nn);
+
+    //                 prev = nn;
+    //             }
+
+
+
+    //         }
+    //     }
+    // }
 
     remove_intersecting_nodes(rougness = 1) {
         const bifurcation_nodes = this.nodes.filter(node => node.children.length > 1);
@@ -178,7 +212,7 @@ class Tree {
                 for (let j = 1; j <= mennyit; j++) {
                     const t = j / (mennyit + 1);
 
-                    const newNode = this.interpolate_node_between(node, child, t);
+                    const newNode = Tree.interpolate_node_between(node, child, t);
                     newLine.push(newNode);
                 }
 
@@ -256,7 +290,7 @@ class Tree {
                  position and tangent vector (direction)
     output: a single normal vector
 
-    note: the binormal is omitted here because, it can
+    note: the binormal is omitted here because it can
           always be calculated from the tangent and the normal vectors
     */
     grow_rmf_normal(source, direction) {

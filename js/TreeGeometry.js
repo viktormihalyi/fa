@@ -3,9 +3,9 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 8;
+const CIRCLE_RES = 6;
 
-const SKIP_CYLINDER_AT_BIFURCATION = true;
+const SKIP_CYLINDER_AT_BIFURCATION = false;
 
 const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 
@@ -23,12 +23,16 @@ function circle(theta, r, center, a, b) {
         .plus(center);
 }
 
-function getCirclePointsForNode(node) {
+function getCirclePoints(pos, normal, binormal, width) {
     const points = [];
     for (let j = 0; j < CIRCLE_RES; j++) {
-        points.push(circle(CRICLE_STEP*j, node.width, node.pos, node.binormal(), node.normal));
+        points.push(circle(CRICLE_STEP*j, width, pos, binormal, normal));
     }
     return points;
+}
+
+function getCirclePointsForNode(node) {
+    return getCirclePoints(node.pos, node.normal, node.binormal(), node.width);
 }
 
 class TreeGeometry {
@@ -81,15 +85,17 @@ class TreeGeometry {
         const normalBuf = [];
         const uvBuf = [];
 
-        this.node_to_circle_idx = new Array(tree.length);
+        const node_to_circle_idx = new Array(tree.length*2);
 
         assert(CIRCLE_RES % 2 === 0, 'odd circle_res');
+
+        const toconnect = [];
 
         const HALF_CIRCLE_RES = CIRCLE_RES / 2;
         for (let i = 0; i < tree.length; i++){
             const node = tree[i];
 
-            this.node_to_circle_idx[i] = vertexBuf.length;
+            node_to_circle_idx[i] = vertexBuf.length;
 
             const circle_points = getCirclePointsForNode(node);
             for (let j = 0; j < CIRCLE_RES; j++) {
@@ -102,16 +108,79 @@ class TreeGeometry {
             }
         }
 
-        // index vbo
-        this.lineCount = 0;
-        for (let node of tree) {
-            if (SKIP_CYLINDER_AT_BIFURCATION) {
-                if (node.children.length > 1) {
-                    continue;
+        for (const node of tree) {
+            for (const child of node.children) {
+                toconnect.push({
+                    from: node_to_circle_idx[tree.indexOf(node)],
+                    to:   node_to_circle_idx[tree.indexOf(child)]
+                });
+            }
+        }
+
+        console.log(vertexBuf.length);
+        for (const node of tree) {
+            if (node.children.length === 2) {
+                const childA = node.children[0];
+                const childB = node.children[1];
+
+                const midpoint = node.pos.plus(childA.pos).plus(childB.pos).over(3);
+                const mid_dir = childA.pos.minus(childB.pos).normalize();
+                const mid_normal = mid_dir.cross(midpoint.minus(node.pos));
+
+                const midpoint_node = new TreeNode(null, midpoint, mid_dir, node.width, mid_normal);
+                midpoint_node.children.push(childB);
+                midpoint_node.parent = childA;
+
+                if (!(childA.children.length > 0 && childB.children.length > 0)) continue;
+                assert(childA.children.length > 0 && childB.children.length > 0, 'no children');
+
+                const step = 1/30;
+
+                let prev = node_to_circle_idx[tree.indexOf(childA)];
+
+                for (let t = 0; t <= 1; t+=step) {
+                    const interpolated_node = Tree.interpolate_node_between(childA, midpoint_node, t);
+                    console.log(interpolated_node);
+
+                    // // spline between children
+                    // const point    = catmull_rom_spline(childA.getDominantChild().pos,        childA.pos,        childB.pos,        childB.getDominantChild().pos,        t);
+                    // const normal   = catmull_rom_spline(childA.getDominantChild().normal,     childA.normal,     childB.normal,     childB.getDominantChild().normal,     t);
+                    // const binormal = catmull_rom_spline(childA.getDominantChild().binormal(), childA.binormal(), childB.binormal(), childB.getDominantChild().binormal(), t);
+                    // normal.normalize();
+                    // binormal.normalize();
+                    // console.log(`childA=${pv(childA.pos)}, childB=${pv(childB.pos)}, interp=${pv(point)}`);
+
+                    // // circles along spline
+                    // const circle_points = getCirclePoints(point, normal, binormal, lerp(childA.width, childB.width, t));
+                    const circle_points = getCirclePointsForNode(interpolated_node);
+
+                    toconnect.push({from: vertexBuf.length, to: prev});
+                    // toconnect.push({from: vertexBuf.length, to: node_to_circle_idx[tree.indexOf(childB)]});
+
+                    for (let j = 0; j < CIRCLE_RES; j++) {
+                        const normal_vector = circle_points[j].minus(interpolated_node.pos).normalize();
+                        const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, lerp(childA.v, childB.v, t));
+
+                        vertexBuf.push(circle_points[j]);
+                        normalBuf.push(normal_vector);
+                        uvBuf.push(texture_coordinates);
+                    }
+
+                    prev = vertexBuf.length-CIRCLE_RES;
                 }
             }
-            this.lineCount += node.children.length * 6 * CIRCLE_RES;
         }
+
+        // // index vbo
+        // this.lineCount = 0;
+        // for (let node of tree) {
+        //     if (SKIP_CYLINDER_AT_BIFURCATION) {
+        //         if (node.children.length > 1) {
+        //             continue;
+        //         }
+        //     }
+        //     this.lineCount += node.children.length * 6 * CIRCLE_RES;
+        // }
 
 
         // element array buffer uses 16 bit unsigned ints
@@ -120,35 +189,23 @@ class TreeGeometry {
 
         const indexBuf = [];
 
-        for (let i = 0; i < tree.length; i++) {
-            const node = tree[i];
+        for (const spline of toconnect) {
+            assert(spline.from+CIRCLE_RES-1 < vertexBuf.length, 'ok');
+            assert(spline.to+CIRCLE_RES-1 < vertexBuf.length, 'ok');
 
-            if (SKIP_CYLINDER_AT_BIFURCATION) {
-                if (node.children.length > 1) {
-                    continue;
-                }
-            }
+            for (let j = 0; j < CIRCLE_RES; j++) {
+                // triangle 1
+                indexBuf.push(spline.to   + j);
+                indexBuf.push(spline.from + j);
+                indexBuf.push(spline.from + (j+1) % CIRCLE_RES);
 
-            for (let child of node.children) {
-                const node_idx  = this.node_to_circle_idx[i];
-                const child_idx = this.node_to_circle_idx[tree.indexOf(child)];
-
-                if (node_idx === undefined || child_idx === undefined) {
-                    continue;
-                }
-                for (let j = 0; j < CIRCLE_RES; j++) {
-                    // triangle 1
-                    indexBuf.push(child_idx + j);
-                    indexBuf.push(node_idx  + j);
-                    indexBuf.push(node_idx  + (j+1) % CIRCLE_RES);
-
-                    // triangle 2
-                    indexBuf.push(child_idx + j);
-                    indexBuf.push(node_idx  + (j+1) % CIRCLE_RES);
-                    indexBuf.push(child_idx + (j+1) % CIRCLE_RES);
-                }
+                // triangle 2
+                indexBuf.push(spline.to   + j);
+                indexBuf.push(spline.from + (j+1) % CIRCLE_RES);
+                indexBuf.push(spline.to   + (j+1) % CIRCLE_RES);
             }
         }
+        this.lineCount = indexBuf.length;
 
         gl.bindVertexArray(this.vao);
 

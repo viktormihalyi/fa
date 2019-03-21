@@ -177,8 +177,8 @@ class Scene {
         for (let i = 0; i < 100; i++) {
             this.tree.grow();
         }
-        this.tree.spline(1);
-        this.tree.remove_intersecting_nodes(1.1);
+        // this.tree.spline(1);
+        // this.tree.remove_intersecting_nodes(1.1);
     }
 
     update(gl, keysPressed) {

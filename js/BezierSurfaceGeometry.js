@@ -8,8 +8,8 @@ function addVec3ToFloat32Array(float32Array, vec3, index) {
 function getBezierPoints(bspoints, BN, BM, resolution, vertices, normals) {
     const bsurface = new BezierSurface(bspoints, BN, BM);
 
-    const N = BN;
-    const M = BM * resolution;
+    const N = 1;
+    const M = 1;
 
     for (let i = 0; i < N; i++) {
         for (let j = 0; j < M; j++) {
@@ -143,12 +143,19 @@ class BezierSurfaceGeometry {
 
     setTree(tree) {
 
-
         console.log('recalculating bezier');
         const gl = this.gl;
 
         const f = [];
         const fn = [];
+
+        getBezierPoints([
+            new Vec3(0, 0, 0), new Vec3(0, 0, 10),
+            new Vec3(0, 8, 0), new Vec3(0, 8, 10),
+            new Vec3(8, 8, 0), new Vec3(8, 8, 10),
+            new Vec3(8, 0, 0), new Vec3(5, 0, 10),
+            new Vec3(0, 0, 0), new Vec3(0, 0, 10),
+        ], 5, 2, 4, f, fn);
 
 
         for (const parent of tree.nodes) {
@@ -157,8 +164,17 @@ class BezierSurfaceGeometry {
             if (bifurcation) {
                 const childA = parent.children[0];
                 const childB = parent.children[1];
-
                 const midpoint = parent.pos.plus(childA.pos).plus(childB.pos).over(3);
+
+
+                function getCirclePointsFor(pos, normal, binormal, width) {
+                    const points = [];
+                    for (let j = 0; j < CIRCLE_RES; j++) {
+                        points.push(circle(CRICLE_STEP*j, width, pos, binormal, normal));
+                    }
+                    return points;
+                }
+
 
                 const parent_circle_points = getCirclePointsForNode(parent);
                 const childA_circle_points = getCirclePointsForNode(childA);
@@ -166,6 +182,9 @@ class BezierSurfaceGeometry {
 
                 const childA_to_childB = childB.pos.minus(childA.pos).normalize();
                 const childB_to_childA = childA.pos.minus(childB.pos).normalize();
+
+                const midpoint_normal = midpoint.minus(parent.pos).cross(childA_to_childB);
+                const midpoint_dir = childA_to_childB;
 
 
                 // parents's normal and binormal so that they are the same across all bifurcations
@@ -216,17 +235,17 @@ class BezierSurfaceGeometry {
                 assert(parent_sel.length === childB_sel.length, 'should be same length');
 
 
-                for (let i = 0; i < parent_sel.length - 1; i++) {
+                if (false) for (let i = 0; i < parent_sel.length - 1; i++) {
                     getBezierPoints([
+                        childB_sel[i], childB_sel[i+1],
                         parent_sel[i], parent_sel[i+1],
                         // midpoint, midpoint,
-                        childB_sel[i], childB_sel[i+1]
                     ], 2, 2, 1, f, fn);
                 }
                 // getBezierPoints([
-                //     ...parent_sel,
-                //     ...childB_sel
-                // ], 2, parent_sel.length, 2, f, fn);
+                //     ...childB_sel,
+                //     ...parent_sel
+                // ], parent_sel.length, 2, 1, f, fn);
 
 
                 // parent to childa
@@ -244,11 +263,11 @@ class BezierSurfaceGeometry {
 
                 assert(parent_sel.length === childB_sel.length, 'should be same length');
 
-                for (let i = 0; i < parent_sel.length - 1; i++) {
+                if (false) for (let i = 0; i < parent_sel.length - 1; i++) {
                     getBezierPoints([
+                        childB_sel[i], childB_sel[i+1],
                         parent_sel[i], parent_sel[i+1],
                         // midpoint, midpoint,
-                        childB_sel[i], childB_sel[i+1]
                     ], 2, 2, 1, f, fn);
                 }
 
@@ -272,14 +291,18 @@ class BezierSurfaceGeometry {
                 // wtf
                 childB_sel.reverse();
 
-                for (let i = 0; i < parent_sel.length - 1; i++) {
+                if (false) for (let i = 0; i < parent_sel.length - 1; i++) {
                     getBezierPoints([
                         parent_sel[i], parent_sel[i+1],
                         midpoint, midpoint,
                         childB_sel[i], childB_sel[i+1],
-                    ], 3, 2, 3, f, fn);
+                    ], 3, 2, 4, f, fn);
                 }
 
+                // getBezierPoints([
+                //     ...parent_sel,
+                //     ...childB_sel,
+                // ], parent_sel.length, 2, 3, f, fn);
 
                 // getBezierPoints([
                 //     p_parent_normal, p_parent_binormal,
