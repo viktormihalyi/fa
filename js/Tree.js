@@ -302,7 +302,7 @@ class Tree {
 
         // inputs for frame 1
         const x1 = source.pos.plus(direction);
-        const t1 = direction.clone().normalize();
+        const t1 = direction; //.clone().normalize();
 
         // outputs for frame 1
         let r1 = 0;
