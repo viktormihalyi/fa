@@ -117,6 +117,8 @@ class TreeGeometry {
             }
         }
 
+        const step = 1/30;
+
         console.log(vertexBuf.length);
         for (const node of tree) {
             if (node.children.length === 2) {
@@ -126,60 +128,72 @@ class TreeGeometry {
                 if (!(childA.children.length > 0 && childB.children.length > 0)) continue;
                 // assert(childA.children.length > 0 && childB.children.length > 0, 'no children');
 
-                const midpoint = node.pos.plus(childA.pos).plus(childB.pos).over(3);
-                const mid_dir = childA.pos.minus(childB.pos).normalize();
+                const midpoint = node.pos.times(2).plus(childA.pos).plus(childB.pos).over(4);
+                const mid_dir = midpoint.minus(node.pos);//childA.pos.minus(childB.pos).normalize();
+                const a_to_b_dir = childB.pos.minus(childA.pos).normalize();
+                const b_to_a_dir = childA.pos.minus(childB.pos).normalize();
                 const mid_normal = mid_dir.cross(midpoint.minus(node.pos));
 
-                const midpoint_node = new TreeNode(null, midpoint, mid_dir, node.width, mid_normal);
-                midpoint_node.children.push(childB);
-                midpoint_node.parent = childA;
-
-                const midpoint_nodeB = new TreeNode(null, midpoint, mid_dir.times(-1), node.width, mid_normal.times(-1));
-                midpoint_node.children.push(childA);
-                midpoint_node.parent = childB;
-
-                const step = 1/10;
-
+                // a to mid
                 {
-                    let prev = node_to_circle_idx[tree.indexOf(childA)];
+                    const points = [];
 
-                    for (let t = 0; t <= 1; t+=step) {
-                        const interpolated_node = Tree.interpolate_node_between(childA, midpoint_node, t);
-                        const circle_points = getCirclePointsForNode(interpolated_node);
+                    let prev_node = childA;//.children[0];
+                    let prev_normal = childA.normal.times(-1);
+                    for (let t = 0; t <= 1; t += step) {
+                        const interpolated_pos = catmull_rom_spline(prev_node.pos, childA.pos, midpoint, childB.pos, t);
+                        const interpolated_dir = catmull_rom_spline(prev_node.dir.times(-1), childA.dir.times(-1), a_to_b_dir, a_to_b_dir, t);
+                        const interpolated_normal = Tree.grow_rmf_normal_raw(interpolated_pos, interpolated_dir, prev_normal, interpolated_dir);
 
-                        toconnect.push({from: vertexBuf.length, to: prev});
+                        points.push(new TreeNode(null, interpolated_pos, interpolated_dir, childA.width, interpolated_normal));
+                        prev_normal = interpolated_normal;
+                    }
+
+                    let prev_idk = node_to_circle_idx[tree.indexOf(childA)];
+                    for (const inode of points) {
+                        const circle_points = getCirclePointsForNode(inode);
+                        toconnect.push({from: vertexBuf.length, to: prev_idk});
 
                         for (let j = 0; j < CIRCLE_RES; j++) {
-                            const normal_vector = circle_points[j].minus(interpolated_node.pos).normalize();
-                            const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, lerp(childA.v, childB.v, t));
+                            const normal_vector = circle_points[j].minus(inode.pos).normalize();
+                            const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, node.v);
 
                             vertexBuf.push(circle_points[j]);
                             normalBuf.push(normal_vector);
                             uvBuf.push(texture_coordinates);
                         }
-
-                        prev = vertexBuf.length-CIRCLE_RES;
+                        prev_idk = vertexBuf.length-CIRCLE_RES;
                     }
                 }
+                // b to mid
                 {
-                    let prev = node_to_circle_idx[tree.indexOf(childB)];
+                    const points = [];
 
-                    for (let t = 0; t <= 1; t+=step) {
-                        const interpolated_node = Tree.interpolate_node_between(childB, midpoint_nodeB, t);
-                        const circle_points = getCirclePointsForNode(interpolated_node);
+                    let prev_node = childB;//.children[0];
+                    let prev_normal = childB.normal.times(-1);
+                    for (let t = 0; t <= 1; t += step) {
+                        const interpolated_pos = catmull_rom_spline(prev_node.pos, childB.pos, midpoint, childA.pos, t);
+                        const interpolated_dir = catmull_rom_spline(prev_node.dir.times(-1), childB.dir.times(-1), b_to_a_dir, b_to_a_dir, t);
+                        const interpolated_normal = Tree.grow_rmf_normal_raw(interpolated_pos, interpolated_dir, prev_normal, interpolated_dir);
 
-                        toconnect.push({from: vertexBuf.length, to: prev});
+                        points.push(new TreeNode(null, interpolated_pos, interpolated_dir, childB.width, interpolated_normal));
+                        prev_normal = interpolated_normal;
+                    }
+
+                    let prev_idk = node_to_circle_idx[tree.indexOf(childB)];
+                    for (const inode of points) {
+                        const circle_points = getCirclePointsForNode(inode);
+                        toconnect.push({from: vertexBuf.length, to: prev_idk});
 
                         for (let j = 0; j < CIRCLE_RES; j++) {
-                            const normal_vector = circle_points[j].minus(interpolated_node.pos).normalize();
-                            const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, lerp(childB.v, childA.v, t));
+                            const normal_vector = circle_points[j].minus(inode.pos).normalize();
+                            const texture_coordinates = new Vec2((HALF_CIRCLE_RES-j%HALF_CIRCLE_RES)/HALF_CIRCLE_RES, node.v);
 
                             vertexBuf.push(circle_points[j]);
                             normalBuf.push(normal_vector);
                             uvBuf.push(texture_coordinates);
                         }
-
-                        prev = vertexBuf.length-CIRCLE_RES;
+                        prev_idk = vertexBuf.length-CIRCLE_RES;
                     }
                 }
             }

@@ -195,7 +195,7 @@ class Scene {
             if (this.tree.nodes.length !== this.last_tree_count) {
                 this.treeGeometry.setPoints(this.tree.nodes);
                 this.frenetGeometry.setPoints(this.tree.nodes);
-                this.bs.setTree(this.tree);
+                // this.bs.setTree(this.tree);
 
                 const modelMatrices = [];
                 for (const node of this.tree.nodes) {

@@ -57,6 +57,10 @@ class TreeNode {
         return dominantChild;
     }
 
+    opposite() {
+        return new TreeNode(null, this.pos, this.dir.times(-1), this.width, this.normal.times(-1));
+    }
+
     getTransformationMatrix() {
         const t = this.dir;
         const b = this.binormal();
@@ -281,6 +285,9 @@ class Tree {
         });
     }
 
+    static grow_rmf_normal_raw(pos, dir, normal, direction) {
+        return Tree.grow_rmf_normal({pos, dir, normal}, direction);
+    }
     /*
     calculates a rotation minimizing frame (RMF)
     https://i2.cs.hku.hk/GraphicsGroup/publications/pdf/Computation%20of%20rotation%20minimizing%20frames.pdf
@@ -293,7 +300,7 @@ class Tree {
     note: the binormal is omitted here because it can
           always be calculated from the tangent and the normal vectors
     */
-    grow_rmf_normal(source, direction) {
+    static grow_rmf_normal(source, direction) {
         // inputs for frame 0
         const x0 = source.pos;
         const t0 = source.dir;
@@ -321,6 +328,19 @@ class Tree {
         return r1;
     }
 
+    grow_from_no(source, direction) {
+        const principal_normal = Tree.grow_rmf_normal(source, direction);
+
+        const angle = source.dir.dot(direction);
+
+        return new TreeNode(
+            source,
+            source.pos.plus(direction.times(BRANCH_LENGTH)),
+            direction,
+            source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
+            principal_normal);
+    }
+
     growFrom(source, direction) {
         // frenet frame
         // https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas
@@ -328,7 +348,7 @@ class Tree {
         // const principal_normal = direction.cross(acceleration_vector).cross(direction);
 
         // rmf frame
-        const principal_normal = this.grow_rmf_normal(source, direction);
+        const principal_normal = Tree.grow_rmf_normal(source, direction);
 
         const angle = source.dir.dot(direction);
 
