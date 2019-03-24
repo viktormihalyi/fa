@@ -33,35 +33,113 @@ class FrenetGeometry {
     setPoints(treeNodes) {
         const gl = this.gl;
 
-        this.vertexCount = treeNodes.length * 6;
 
         const vertexBuf = [];
         const colorBuf = [];
 
-
-        for (const node of treeNodes) {
-            const dir = node.dir.times(VEC_LENGTH);
-            let normal = node.normal.times(VEC_LENGTH);
-            let binormal = node.binormal().times(VEC_LENGTH);
-
-            if (node.children.length === 2) {
-                const childA_to_childB = node.children[1].pos.minus(node.children[0].pos).normalize();
-                normal = project_to_plane(childA_to_childB, node.dir).normalize().times(VEC_LENGTH);
-                binormal = node.dir.cross(normal).normalize().times(VEC_LENGTH);
-            }
-
-            vertexBuf.push(node.pos);
-            vertexBuf.push(node.pos.plus(dir));
+        const add_frame = (pos, tangent, normal) => {
+            vertexBuf.push(pos);
+            vertexBuf.push(pos.plus(tangent.clone().normalize().times(VEC_LENGTH)));
             colorBuf.push(TANGENT_COLOR, TANGENT_COLOR);
 
-            vertexBuf.push(node.pos);
-            vertexBuf.push(node.pos.plus(normal));
+            vertexBuf.push(pos);
+            vertexBuf.push(pos.plus(normal.clone().normalize().times(VEC_LENGTH)));
             colorBuf.push(NORMAL_COLOR, NORMAL_COLOR);
 
-            vertexBuf.push(node.pos);
-            vertexBuf.push(node.pos.plus(binormal));
+            vertexBuf.push(pos);
+            vertexBuf.push(pos.plus(tangent.cross(normal).normalize().times(VEC_LENGTH)));
             colorBuf.push(BINORMAL_COLOR, BINORMAL_COLOR);
         }
+
+        for (const node of treeNodes) {
+            add_frame(node.pos, node.dir, node.normal);
+        }
+
+        const step = 1/15;
+
+        if (false)
+        for (const node of treeNodes) {
+            if (node.children.length === 2) {
+                const childA = node.children[0];
+                const childB = node.children[1];
+
+                if (!(childA.children.length > 0 && childB.children.length > 0)) continue;
+                // assert(childA.children.length > 0 && childB.children.length > 0, 'no children');
+
+                const midpoint = node.pos.plus(childA.pos.times(2)).plus(childB.pos.times(2)).over(5);
+                const mid_dir = midpoint.minus(node.pos);//childA.pos.minus(childB.pos).normalize();
+                const a_to_b_dir = childB.pos.minus(childA.pos).normalize();
+                const b_to_a_dir = childA.pos.minus(childB.pos).normalize();
+                // const mid_normal = mid_dir.cross(midpoint.minus(node.pos));
+                let mid_normal;
+
+                // a to mid
+                {
+                    const points = [];
+                    for (let t = 0; t <= 1; t += step) {
+                        const interpolated_pos = catmull_rom_spline(childA.children[0].pos, childA.pos, midpoint, childB.pos, t);
+                        points.push(interpolated_pos);
+                    }
+                    const points_and_dirs = [];
+                    let prev_pos = childA.pos;
+                    for (let i = 0; i < points.length; i++) {
+                        points_and_dirs.push({
+                            pos: points[i],
+                            dir: points[i].minus(prev_pos).normalize(),
+                        });
+                        prev_pos = points[i];
+                    }
+
+                    const points_and_dirs_and_normals = [];
+                    let last_normal = childA.normal.times(-1);
+                    for (let i = 0; i < points_and_dirs.length-1; i++) {
+                        const n = Tree.grow_rmf_normal_raw(points_and_dirs[i].pos, points_and_dirs[i].dir, last_normal, points_and_dirs[i+1].pos.minus(points_and_dirs[i].pos));
+                        points_and_dirs_and_normals.push({
+                            pos: points_and_dirs[i].pos,
+                            dir: points_and_dirs[i].dir,
+                            normal: n,
+                        });
+                        last_normal = n;
+                    }
+                    mid_normal = last_normal.clone();
+                    points_and_dirs_and_normals.forEach((n, i) => {if (i > -1) add_frame(n.pos, n.dir, n.normal)});
+                }
+
+                // mid to b
+                {
+                    const points = [];
+                    for (let t = 0; t <= 1; t += step) {
+                        const interpolated_pos = catmull_rom_spline(childA.pos, midpoint, childB.pos, childB.children[0].pos, t);
+                        points.push(interpolated_pos);
+                    }
+                    const points_and_dirs = [];
+                    let prev_pos = midpoint;
+                    for (let i = 0; i < points.length; i++) {
+                        points_and_dirs.push({
+                            pos: points[i],
+                            dir: points[i].minus(prev_pos).normalize(),
+                        });
+                        prev_pos = points[i];
+                    }
+
+                    const points_and_dirs_and_normals = [];
+                    let last_normal = mid_normal;
+                    for (let i = 0; i < points_and_dirs.length-1; i++) {
+                        const n = Tree.grow_rmf_normal_raw(points_and_dirs[i].pos, points_and_dirs[i].dir, last_normal, points_and_dirs[i+1].pos.minus(points_and_dirs[i].pos));
+                        points_and_dirs_and_normals.push({
+                            pos: points_and_dirs[i].pos,
+                            dir: points_and_dirs[i].dir,
+                            normal: n,
+                        });
+                        last_normal = n;
+                    }
+
+                    points_and_dirs_and_normals.forEach((n, i) => {if (i > -1) add_frame(n.pos, n.dir, n.normal)});
+                }
+            }
+        }
+
+        this.vertexCount = vertexBuf.length;
 
         gl.bindVertexArray(this.vao);
 

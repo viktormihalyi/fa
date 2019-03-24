@@ -22,7 +22,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     } camera;
 
     void main(void) {
-        vec4 wLiPos = vec4(-100, 100, 0, 1);
+        asdvec4 wLiPos = vec4(100, 100, 100, 1);
 
         vec3 T = normalize((vec4(tangent,      0) * vertexModelMatrix).xyz);
         vec3 B = normalize((vec4(bitangent,    0) * vertexModelMatrix).xyz);

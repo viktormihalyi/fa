@@ -1,39 +1,5 @@
 "use strict";
 
-// https://en.wikipedia.org/wiki/File:Catmull-Rom_Parameterized_Time.png
-// centripetal: alpha = 0.5
-// uniform:     alpha = 0
-// chordal:     alpha = 1
-const ALPHA = 1;
-const EPSILON = 1e-2;
-
-// https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
-// centripetal catmull rom spline
-function catmull_rom_spline(p0, p1, p2, p3, t) {
-    const t0 = 0;
-    const t1 = tj(t0, p0, p1);
-    const t2 = tj(t1, p1, p2);
-    const t3 = tj(t2, p2, p3);
-
-    t = lerp(t1, t2, t);
-
-    const a1 = p0.times((t1-t) / (t1-t0)).plus(p1.times((t-t0) / (t1-t0)));
-    const a2 = p1.times((t2-t) / (t2-t1)).plus(p2.times((t-t1) / (t2-t1)));
-    const a3 = p2.times((t3-t) / (t3-t2)).plus(p3.times((t-t2) / (t3-t2)));
-
-    const b1 = a1.times((t2-t) / (t2-t0)).plus(a2.times((t-t0) / (t2-t0)));
-    const b2 = a2.times((t3-t) / (t3-t1)).plus(a3.times((t-t1) / (t3-t1)));
-
-    const c  = b1.times((t2-t) / (t2-t1)).plus(b2.times((t-t1) / (t2-t1)));
-    return c;
-}
-
-function tj(ti, pi, pj) {
-    let len = Math.max(EPSILON, pj.minus(pi).length());
-    return Math.pow(len, ALPHA) + ti;
-}
-
-
 class Scene {
     constructor(gl) {
         this.gl = gl;
@@ -46,6 +12,8 @@ class Scene {
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
             { position: 2, name: 'vertexTexCoord' },
+            { position: 3, name: 'tangent' },
+            { position: 4, name: 'bitangent' },
         ]);
 
         const vs = new Shader(gl, gl.VERTEX_SHADER, 'leaves.vert');
@@ -155,6 +123,7 @@ class Scene {
         this.tree = new Tree();
 
         this.treeTexture = new Texture2D(gl, `./pine.png`);
+        this.treeTextureNorm = new Texture2D(gl, `./pine_normal.png`);
 
         this.leavesTexture = new Texture2D(gl, `./leaves.png`);
         this.leavesTextureAlpha = new Texture2D(gl, `./leaves_alpha.png`);
@@ -177,8 +146,9 @@ class Scene {
         for (let i = 0; i < 100; i++) {
             this.tree.grow();
         }
-        // this.tree.spline(1);
-        // this.tree.remove_intersecting_nodes(1.1);
+        this.tree.spline(2);
+        this.tree.remove_intersecting_nodes(1.1);
+        this.tree.add_middle_spline();
     }
 
     update(gl, keysPressed) {
@@ -217,10 +187,12 @@ class Scene {
         // update camera
         this.camera.move(dt, keysPressed);
         Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
+        Uniforms.camera.wEye.set(this.camera.position);
 
 
         // render tree
-        this.uniforms.tree.set(this.treeTexture, 0);
+        this.uniforms.treeTexture.set(this.treeTexture);
+        // this.uniforms.treeTextureNorm.set(this.treeTextureNorm);
 
         if (keysPressed['1']) {
             this.mode = 1;

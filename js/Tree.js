@@ -79,6 +79,7 @@ class Tree {
     constructor() {
         this.nodes = [];
         this.attractionPoints = [];
+        this.middle_splines = [];
 
         // setup starting tree - just one one
         this.nodes.push(new TreeNode(
@@ -112,6 +113,40 @@ class Tree {
         const interpolated_normal = catmull_rom_spline(prev.normal, nodeA.normal, nodeB.normal, grandchild.normal, t);
 
         return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(nodeA.width, nodeB.width, t), interpolated_normal);
+    }
+
+    add_middle_spline() {
+        for (const s of this.middle_splines) {
+            this.nodes.splice(this.nodes.indexOf(s), 1);
+        }
+        this.middle_splines = [];
+
+        for (const node of this.nodes) {
+            if (node.children.length === 2) {
+                const childA = node.children[0];
+                const childB = node.children[1];
+
+                const middle_point = node.pos
+                                    .plus(childA.pos.times(2))
+                                    .plus(childB.pos.times(2))
+                                    .over(5);
+                const middle_dir = childB.pos.minus(childA.pos).normalize();
+                const middle_width = (childA.width + childB.width) / 2;
+                const middle_normal = Tree.grow_rmf_normal_raw(childA.pos, childA.dir.times(-1), childA.normal.times(-1), middle_dir);
+
+                const childA_opposite = childA.opposite();
+                const middle_node = new TreeNode(childA_opposite, middle_point, middle_dir, middle_width, middle_normal);
+
+                middle_node.children.push(childB);
+                childA_opposite.children.push(middle_node);
+
+                this.nodes.push(childA_opposite);
+                this.nodes.push(middle_node);
+
+                this.middle_splines.push(childA_opposite);
+                this.middle_splines.push(middle_node);
+            }
+        }
     }
 
     // add_imp() {
@@ -285,9 +320,6 @@ class Tree {
         });
     }
 
-    static grow_rmf_normal_raw(pos, dir, normal, direction) {
-        return Tree.grow_rmf_normal({pos, dir, normal}, direction);
-    }
     /*
     calculates a rotation minimizing frame (RMF)
     https://i2.cs.hku.hk/GraphicsGroup/publications/pdf/Computation%20of%20rotation%20minimizing%20frames.pdf
@@ -326,6 +358,10 @@ class Tree {
         // s1 = t1.cross(r1);
 
         return r1;
+    }
+
+    static grow_rmf_normal_raw(pos, dir, normal, direction) {
+        return Tree.grow_rmf_normal({pos, dir, normal}, direction);
     }
 
     grow_from_no(source, direction) {
