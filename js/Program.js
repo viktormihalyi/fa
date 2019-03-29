@@ -16,6 +16,13 @@ class Program {
             throw new Error('Could not link shaders [vertex shader:' + vertexShader.sourceFileName + ']:[fragment shader: ' + fragmentShader.sourceFileName + ']\n' + gl.getProgramInfoLog(this.glProgram));
         }
     }
+    static from(gl, vertexShaderFile, fragmentShaderFile, attribLocations) {
+        return new Program(gl,
+            new Shader(gl, gl.VERTEX_SHADER, vertexShaderFile),
+            new Shader(gl, gl.FRAGMENT_SHADER, fragmentShaderFile),
+            attribLocations
+        );
+    }
     commit() {
         this.gl.useProgram(this.glProgram);
     }

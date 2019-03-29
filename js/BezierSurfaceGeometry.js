@@ -1,10 +1,3 @@
-function addVec3ToFloat32Array(float32Array, vec3, index) {
-    float32Array[index + 0] = vec3.storage[0];
-    float32Array[index + 1] = vec3.storage[1];
-    float32Array[index + 2] = vec3.storage[2];
-}
-
-
 function getBezierPoints(bspoints, BN, BM, resolution, vertices, normals) {
     const bsurface = new BezierSurface(bspoints, BN, BM);
 
@@ -56,89 +49,7 @@ class BezierSurfaceGeometry {
 
         gl.bindVertexArray(null);
 
-
         this.vertexCount = 0;
-        // generate BN * BM array of points
-
-        // const BN = 8;
-        // const BM = 8;
-        // let points = [];
-        // for (let i = 0; i < BN; i++) {
-        //     for (let j = 0; j < BM; j++) {
-        //         let y = Math.random()*250;
-        //         points.push(new Vec3(i*25, y, j*25));
-        //     }
-        // }
-        // let bsurface = new BezierSurface(points, BN, BM);
-
-
-        // const resulution = 2;
-
-        // const N = BN * resulution;
-        // const M = BM * resulution;
-
-        // const f = new Float32Array(N*M*6*3);
-        // const fn = new Float32Array(N*M*6*3);
-        // fn.fill(1);
-
-        // let iter = 0;
-        // let niter = 0;
-
-
-        // this.vertexCount = N*M*6;
-
-        // for (let i = 0; i < N; i++) {
-        //     for (let j = 0; j < M; j++) {
-        //         const u = i / N;
-        //         const v = j / M;
-
-        //         const next_u = (i+1) / N;
-        //         const next_v = (j+1) / M;
-
-
-        //         let p1 = bsurface.pointAt(u, v);
-        //         let p2 = bsurface.pointAt(u, next_v);
-        //         let p3 = bsurface.pointAt(next_u, v);
-        //         let p4 = bsurface.pointAt(next_u, next_v);
-
-        //         addVec3ToFloat32Array(f, p1, iter);
-        //         iter += 3;
-        //         addVec3ToFloat32Array(f, p3, iter);
-        //         iter += 3;
-        //         addVec3ToFloat32Array(f, p2, iter);
-        //         iter += 3;
-        //         addVec3ToFloat32Array(f, p3, iter);
-        //         iter += 3;
-        //         addVec3ToFloat32Array(f, p4, iter);
-        //         iter += 3;
-        //         addVec3ToFloat32Array(f, p2, iter);
-        //         iter += 3;
-
-
-        //         let np1 = bsurface.normalAt(u, v);
-        //         let np2 = bsurface.normalAt(u, next_v);
-        //         let np3 = bsurface.normalAt(next_u, v);
-        //         let np4 = bsurface.normalAt(next_u, next_v);
-
-        //         addVec3ToFloat32Array(fn, np1, niter);
-        //         niter += 3;
-        //         addVec3ToFloat32Array(fn, np3, niter);
-        //         niter += 3;
-        //         addVec3ToFloat32Array(fn, np2, niter);
-        //         niter += 3;
-        //         addVec3ToFloat32Array(fn, np3, niter);
-        //         niter += 3;
-        //         addVec3ToFloat32Array(fn, np4, niter);
-        //         niter += 3;
-        //         addVec3ToFloat32Array(fn, np2, niter);
-        //         niter += 3;
-        //     }
-        // }
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, f, gl.STATIC_DRAW);
-
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, fn, gl.STATIC_DRAW);
     }
 
     setTree(tree) {
@@ -165,15 +76,6 @@ class BezierSurfaceGeometry {
                 const childA = parent.children[0];
                 const childB = parent.children[1];
                 const midpoint = parent.pos.plus(childA.pos).plus(childB.pos).over(3);
-
-
-                function getCirclePointsFor(pos, normal, binormal, width) {
-                    const points = [];
-                    for (let j = 0; j < CIRCLE_RES; j++) {
-                        points.push(circle(CRICLE_STEP*j, width, pos, binormal, normal));
-                    }
-                    return points;
-                }
 
 
                 const parent_circle_points = getCirclePointsForNode(parent);
@@ -306,6 +208,7 @@ class BezierSurfaceGeometry {
 
     draw(debug) {
         if (this.vertexCount === 0) {
+            console.log('not drawing');
             return;
         }
 
@@ -314,7 +217,7 @@ class BezierSurfaceGeometry {
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
-        gl.drawArrays(debug ? gl.LINES : gl.TRIANGLES, this.vertexBuffer, this.vertexCount);
+        gl.drawArrays(gl.TRIANGLES, this.vertexBuffer, this.vertexCount);
         gl.bindVertexArray(null);
     }
 }

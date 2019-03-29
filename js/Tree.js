@@ -57,6 +57,10 @@ class TreeNode {
         return dominantChild;
     }
 
+    clone() {
+        return new TreeNode(null, this.pos, this.dir, this.width, this.normal);
+    }
+
     opposite() {
         return new TreeNode(null, this.pos, this.dir.times(-1), this.width, this.normal.times(-1));
     }
@@ -79,7 +83,7 @@ class Tree {
     constructor() {
         this.nodes = [];
         this.attractionPoints = [];
-        this.middle_splines = [];
+        this.middleNodes = [];
 
         // setup starting tree - just one one
         this.nodes.push(new TreeNode(
@@ -116,10 +120,10 @@ class Tree {
     }
 
     add_middle_spline() {
-        for (const s of this.middle_splines) {
+        for (const s of this.middleNodes) {
             this.nodes.splice(this.nodes.indexOf(s), 1);
         }
-        this.middle_splines = [];
+        this.middleNodes = [];
 
         for (const node of this.nodes) {
             if (node.children.length === 2) {
@@ -130,62 +134,53 @@ class Tree {
                                     .plus(childA.pos.times(2))
                                     .plus(childB.pos.times(2))
                                     .over(5);
-                const middle_dir = childB.pos.minus(childA.pos).normalize();
-                const middle_width = (childA.width + childB.width) / 2;
-                const middle_normal = Tree.grow_rmf_normal_raw(childA.pos, childA.dir.times(-1), childA.normal.times(-1), middle_dir);
+
+                const a_to_b_normal = childB.pos.minus(childA.pos).normalize();
+                const b_to_a_normal = childA.pos.minus(childB.pos).normalize();
 
                 const childA_opposite = childA.opposite();
-                const middle_node = new TreeNode(childA_opposite, middle_point, middle_dir, middle_width, middle_normal);
+                const childB_opposite = childB.opposite();
 
-                middle_node.children.push(childB);
-                childA_opposite.children.push(middle_node);
+                const middle_width = (childA.width + childB.width) / 2.1;
+                const middle_normal = Tree.grow_rmf_normal_raw(childA.pos, childA.dir.times(-1), childA.normal.times(-1), a_to_b_normal);
+                const middle_normalb = Tree.grow_rmf_normal_raw(childB.pos, childB.dir.times(-1), childB.normal.times(-1), b_to_a_normal);
 
-                this.nodes.push(childA_opposite);
-                this.nodes.push(middle_node);
+                {
+                    const middle_node = new TreeNode(childA_opposite, middle_point, a_to_b_normal, middle_width, middle_normal);
 
-                this.middle_splines.push(childA_opposite);
-                this.middle_splines.push(middle_node);
+                    const bcopy = childB.clone();
+
+                    childA_opposite.children.push(middle_node);
+                    middle_node.children.push(bcopy);
+                    bcopy.parent = middle_node;
+
+                    this.nodes.push(childA_opposite);
+                    this.nodes.push(middle_node);
+                    this.nodes.push(bcopy);
+
+                    this.middleNodes.push(childA_opposite);
+                    this.middleNodes.push(middle_node);
+                    this.middleNodes.push(bcopy);
+                }
+                if (false)
+                {
+                    const middle_node = new TreeNode(childB_opposite, middle_point, b_to_a_normal, middle_width, middle_normalb);
+
+                    childB_opposite.children.push(middle_node);
+
+                    this.nodes.push(childB_opposite);
+                    this.nodes.push(middle_node);
+
+                    this.middleNodes.push(childB_opposite);
+                    this.middleNodes.push(middle_node);
+                }
+
             }
         }
     }
 
-    // add_imp() {
-    //     console.log('WTF');
-    //     for (const node of this.nodes) {
-    //         if (node.children.length === 2) {
-    //             const childA = node.children[0];
-    //             const childB = node.children[1];
-
-    //             const midpoint = node.pos.plus(childA.pos).plus(childB.pos).over(3);
-
-    //             const midpoint_dir = childB.pos.minus(childA.pos).normalize();
-    //             const midpoint_normal = midpoint.minus(node.pos).cross(midpoint_dir);
-
-    //             let prev = childA;
-    //             for (let t = 0; t <= 1; t += 0.1) {
-
-    //                 if (childA.children.length === 0) continue;
-    //                 const interp_pos = catmull_rom_spline(childA.children[0].pos, childA.pos, midpoint, childB.pos, t);
-    //                 const interp_dir = catmull_rom_spline(childA.children[0].dir, childA.dir, midpoint_dir, childB.dir, t);
-    //                 const interp_normal = catmull_rom_spline(childA.children[0].normal, childA.normal, midpoint_normal, childB.normal, t);
-    //                 const width = lerp(childA.width, childB.width, t/2);
-    //                 const nn = new TreeNode(null, interp_pos, interp_dir, width, interp_normal);
-
-    //                 nn.parent = prev;
-    //                 prev.children.push(nn);
-
-    //                 prev = nn;
-    //             }
-
-
-
-    //         }
-    //     }
-    // }
-
     remove_intersecting_nodes(rougness = 1) {
         const bifurcation_nodes = this.nodes.filter(node => node.children.length > 1);
-        console.log(`found ${bifurcation_nodes.length} bifurcations`);
 
         let removed_count = 0;
 
@@ -225,8 +220,6 @@ class Tree {
                 }
             }
         }
-
-        console.log(`remove ${removed_count} nodes`);
     }
 
 
@@ -408,8 +401,6 @@ class Tree {
             return;
         }
 
-        // console.log('tree size:', this.nodes.length, 'nodes');
-
         let influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
 
         // find closest node to each attraction point
@@ -422,7 +413,7 @@ class Tree {
 
                 // only allow 2 children max
                 if (treeNode.children.length >= 2) {
-                    continue;
+                    // continue;
                 }
 
                 let dist = this.dist_to_node(apoint, treeNode);

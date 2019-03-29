@@ -1,45 +1,53 @@
 "use strict";
 
+const ADD_MIDDLE_NODE = false;
+const BEZIER_IZE = false;
+
 class Scene {
     constructor(gl) {
         this.gl = gl;
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        const vsIdle = new Shader(gl, gl.VERTEX_SHADER, 'tree.vert');
-        const fsSolid = new Shader(gl, gl.FRAGMENT_SHADER, 'tree.frag');
-        this.solidProgram = new Program(gl, vsIdle, fsSolid, [
+        this.treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
             { position: 2, name: 'vertexTexCoord' },
             { position: 3, name: 'tangent' },
             { position: 4, name: 'bitangent' },
         ]);
+        this.treeGeometry = new TreeGeometry(gl);
+        const treeMaterial = new Material(gl, this.treeShader);
+        this.treeTexture = new Texture2D(gl, `./pine.png`);
+        this.treeTextureNorm = new Texture2D(gl, `./pine_normal.png`);
+        treeMaterial.treeTexture.set(this.treeTexture);
+        treeMaterial.treeTextureNorm.set(this.treeTextureNorm);
 
-        const vs = new Shader(gl, gl.VERTEX_SHADER, 'leaves.vert');
-        const fs = new Shader(gl, gl.FRAGMENT_SHADER, 'leaves.frag');
-        this.leavesShader = new Program(gl, vs, fs, [
+        const treeObject = new GameObject(new Mesh(this.treeGeometry, treeMaterial));
+
+        this.gameObjects = [];
+        this.gameObjects.push(treeObject);
+
+        this.leavesShader = Program.from(gl, 'leaves.vert', 'leaves.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
             { position: 2, name: 'vertexTexCoord' },
             { position: 3, name: 'modelM' },
         ]);
 
-        const fvs = new Shader(gl, gl.VERTEX_SHADER, 'frenet.vert');
-        const ffs = new Shader(gl, gl.FRAGMENT_SHADER, 'frenet.frag');
-        this.frenetShader = new Program(gl, fvs, ffs, [
+        this.frameShader = Program.from(gl, 'frenet.vert', 'frenet.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexColor' },
         ]);
 
         this.uniforms = {};
-        UniformReflection.addProperties(gl, this.solidProgram.glProgram, this.uniforms);
+        UniformReflection.addProperties(gl, this.treeShader.glProgram, this.uniforms);
 
         this.uniforms_leaves = {};
         UniformReflection.addProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
 
         this.uniforms_frenet = {};
-        UniformReflection.addProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
+        UniformReflection.addProperties(gl, this.frameShader.glProgram, this.uniforms_frenet);
 
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
@@ -47,7 +55,7 @@ class Scene {
         this.leaves = new QuadGeometry(gl);
 
         this.spheres = new SphereGeometry(gl);
-
+{
         // function func(position, segments) {
         //     for (const seg of segments) {
         //         const d = distanceToLineSegment2(position, seg[0], seg[1]);
@@ -117,18 +125,15 @@ class Scene {
 
 
         // this.spheres.setModelMatrices(m);
-
+    }
 
         this.camera = new PerspectiveCamera();
         this.tree = new Tree();
 
-        this.treeTexture = new Texture2D(gl, `./pine.png`);
-        this.treeTextureNorm = new Texture2D(gl, `./pine_normal.png`);
 
         this.leavesTexture = new Texture2D(gl, `./leaves.png`);
         this.leavesTextureAlpha = new Texture2D(gl, `./leaves_alpha.png`);
 
-        this.treeGeometry = new TreeGeometry(gl);
         this.frenetGeometry = new FrenetGeometry(gl);
 
         this.last_tree_count = this.tree.nodes.length;
@@ -143,12 +148,16 @@ class Scene {
 
         this.bs = new BezierSurfaceGeometry(gl);
 
+
         for (let i = 0; i < 100; i++) {
             this.tree.grow();
         }
-        this.tree.spline(2);
-        this.tree.remove_intersecting_nodes(1.1);
-        this.tree.add_middle_spline();
+        this.tree.spline(1);
+        // this.tree.remove_intersecting_nodes(0.8);
+
+        if (ADD_MIDDLE_NODE) {
+            this.tree.add_middle_spline();
+        }
     }
 
     update(gl, keysPressed) {
@@ -163,13 +172,16 @@ class Scene {
 
 
             if (this.tree.nodes.length !== this.last_tree_count) {
-                this.treeGeometry.setPoints(this.tree.nodes);
+                this.treeGeometry.setPoints(this.tree);
                 this.frenetGeometry.setPoints(this.tree.nodes);
-                // this.bs.setTree(this.tree);
+
+                if (BEZIER_IZE) {
+                    this.bs.setTree(this.tree);
+                }
 
                 const modelMatrices = [];
                 for (const node of this.tree.nodes) {
-                    if (node.children.length === 0) {
+                    if (node.children.length === 0 && this.tree.middleNodes.indexOf(node) === -1) {
                         modelMatrices.push(node.getTransformationMatrix().scale(BRANCH_LENGTH).translate(node.pos));
                         modelMatrices.push(node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(90), node.dir).translate(node.pos));
                     }
@@ -186,43 +198,52 @@ class Scene {
 
         // update camera
         this.camera.move(dt, keysPressed);
-        Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
-        Uniforms.camera.wEye.set(this.camera.position);
 
+        // draw objects
+        for (const obj of this.gameObjects) {
+            obj.draw(this.camera);
+        }
 
         // render tree
-        this.uniforms.treeTexture.set(this.treeTexture);
+        // this.uniforms.treeTexture.set(this.treeTexture);
         // this.uniforms.treeTextureNorm.set(this.treeTextureNorm);
 
-        if (keysPressed['1']) {
-            this.mode = 1;
-        }
-        if (keysPressed['2']) {
-            this.mode = 2;
-        }
+        // if (keysPressed['1']) {
+        //     this.mode = 1;
+        // }
+        // if (keysPressed['2']) {
+        //     this.mode = 2;
+        // }
 
-        this.solidProgram.commit();
-        UniformReflection.commitProperties(gl, this.solidProgram.glProgram, this.uniforms);
+        // this.treeShader.commit();
+        // UniformReflection.commitProperties(gl, this.treeShader.glProgram, this.uniforms);
 
         if (this.mq) this.mq.draw();
-        if (this.bs) this.bs.draw(this.mode === 2);
+        if (BEZIER_IZE) this.bs.draw(this.mode === 2);
 
-        this.treeGeometry.draw(this.mode === 2);
+        // this.treeGeometry.draw(this.mode === 2);
 
-        this.frenetShader.commit();
-        UniformReflection.commitProperties(gl, this.frenetShader.glProgram, this.uniforms_frenet);
+        this.frameShader.commit();
+        UniformReflection.commitProperties(gl, this.frameShader.glProgram, this.uniforms_frenet);
         this.frenetGeometry.draw();
 
         // render leaves
-
         this.uniforms_leaves.leaves.set(this.leavesTexture);
         this.uniforms_leaves.leaves_alpha.set(this.leavesTextureAlpha);
 
         this.leavesShader.commit();
         UniformReflection.commitProperties(gl, this.leavesShader.glProgram, this.uniforms_leaves);
-        // this.leaves.draw();
+        this.leaves.draw();
 
         // this.spheres.draw();
+
+
+        // this.camera.move(dt, keysPressed);
+        // Uniforms.trafo.rayDirMatrix.set(this.camera.rayDirMatrix);
+
+        // for(let i=0; i<this.gameObjects.length; i++) {
+        //     this.gameObjects[i].draw(this.camera);
+        // }
     }
 
     onresize(width, height) {

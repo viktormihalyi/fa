@@ -12,7 +12,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     void main(void) {
 
         float alpha = texture(leaves_alpha, uv).r;
-        if (alpha < 0.05) {
+        if (alpha < 0.8) {
             discard;
         }
         vec3 N = normalize(normal);

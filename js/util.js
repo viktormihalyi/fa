@@ -113,7 +113,7 @@ function roundVec3(vec) {
 // centripetal: alpha = 0.5
 // uniform:     alpha = 0
 // chordal:     alpha = 1
-const ALPHA = 1;
+const ALPHA = 0;
 const EPSILON = 1e-2;
 
 // https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
@@ -140,4 +140,9 @@ function catmull_rom_spline(p0, p1, p2, p3, t) {
 function tj(ti, pi, pj) {
     let len = Math.max(EPSILON, pj.minus(pi).length());
     return Math.pow(len, ALPHA) + ti;
+}
+
+function normalVectorForTriangle(node1, node2, node3) {
+    const area = node2.minus(node1).length() * node2.minus(node3).length() / 2;
+    return node2.minus(node1).cross(node2.minus(node3)).times(area);
 }
