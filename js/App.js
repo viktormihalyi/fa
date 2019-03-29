@@ -52,7 +52,7 @@ class App {
         if (pendingResourceNames.length === 0) {
             // animate and draw scene
             this.scene.update(this.gl, this.keysPressed);
-            this.status.innerHTML = "WASDQE for moving around<br>1 - normal mode<br>2 - debug mode";
+            this.status.innerHTML = "ready";
         }
         else {
             this.status.innerText = "loading: " + pendingResourceNames;

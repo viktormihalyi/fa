@@ -1,20 +1,25 @@
 "use strict";
 class InstancedGeometry {
-    constructor(gl, geometry, start_modelm_vertex_attrib) {
-        assert(geometry.vertexCount !== undefined, 'no vertexcount on geometry');
+    constructor(gl, geometry, start_modelm_vertex_attrib, usesIndexArray) {
+        assert(geometry.vertexCount !== undefined, 'no vertexCount on geometry');
         assert(geometry.inputLayout !== undefined, 'no inputLayout on geometry');
+        assert(geometry.indexBuffer !== undefined, 'no indexBuffer on geometry');
 
         this.gl = gl;
         this.geometry = geometry;
         this.instanceCount = 0;
+        this.usesIndexArray = usesIndexArray;
 
-        const vec4size = 4*4;
 
         //  instanced model matrix
+        gl.bindVertexArray(this.geometry.inputLayout);
+
         this.modelMatrix = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.modelMatrix);
 
+        const vec4size = 4*4;
         const start_idx = start_modelm_vertex_attrib;
+
         gl.enableVertexAttribArray(start_idx+0);
         gl.vertexAttribPointer(start_idx+0, 4, gl.FLOAT, false, 4*vec4size, 0*vec4size);
         gl.enableVertexAttribArray(start_idx+1);
@@ -37,6 +42,7 @@ class InstancedGeometry {
 
         const mat4size = 4*4*4;
 
+        gl.bindVertexArray(this.geometry.inputLayout);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.modelMatrix);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.instanceCount * mat4size), gl.STATIC_DRAW);
 
@@ -49,12 +55,19 @@ class InstancedGeometry {
     }
 
     draw() {
-        if (this.instanceCount === 0) {
+        if (this.geometry.vertexCount === 0 || this.instanceCount === 0) {
             return;
         }
 
         const gl = this.gl;
-        gl.bindVertexArray(this.inputLayout);
-        gl.drawArraysInstanced(gl.TRIANGLES, this.geometry.vertexBuffer, this.geometry.vertexCount, this.instanceCount);
+        gl.bindVertexArray(this.geometry.inputLayout);
+        if (this.usesIndexArray) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.geometry.indexBuffer);
+            gl.drawElementsInstanced(gl.TRIANGLES, this.geometry.vertexCount, gl.UNSIGNED_SHORT, 0, this.instanceCount);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        } else {
+            // ???
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, this.geometry.vertexCount, this.instanceCount);
+        }
     }
 }

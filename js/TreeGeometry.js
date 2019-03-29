@@ -271,8 +271,8 @@ class TreeGeometry {
     draw(wireframe) {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
         if (wireframe) {
             gl.drawElements(gl.LINES, this.lineCount, gl.UNSIGNED_SHORT, 0);
