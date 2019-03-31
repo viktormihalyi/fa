@@ -25,13 +25,14 @@ class Scene {
             { position: 2, name: 'vertexTexCoord' },
             { position: 3, name: 'tangent' },
             { position: 4, name: 'bitangent' },
+            { position: 5, name: 'width' },
         ]);
         const treeGeometry = new TreeGeometry(gl);
         treeGeometry.setPoints(tree);
-        const treeMaterial = new Material(gl, treeShader);
-        treeMaterial.treeTexture.set(new Texture2D(gl, `./pine.png`));
-        treeMaterial.treeTextureNorm.set(new Texture2D(gl, `./pine_normal.png`));
-        const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial));
+        this.treeMaterial = new Material(gl, treeShader);
+        this.treeMaterial.treeTexture.set(new Texture2D(gl, `./pine.png`));
+        this.treeMaterial.treeTextureNorm.set(new Texture2D(gl, `./pine_normal.png`));
+        const treeObject = new GameObject(new Mesh(treeGeometry, this.treeMaterial));
 
 
         const leavesShader = Program.from(gl, 'leaves.vert', 'leaves.frag', [
@@ -58,6 +59,7 @@ class Scene {
         const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial));
 
 
+
         const frenetShader = Program.from(gl, 'frenet.vert', 'frenet.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexColor' },
@@ -72,6 +74,17 @@ class Scene {
         this.gameObjects.push(treeObject);
         this.gameObjects.push(leavesObject);
         this.gameObjects.push(frenetFrames);
+
+        const testQuad = new Material(gl, Program.from(gl, 'quad.vert', 'quad.frag', [
+            { position: 0, name: 'vertexPosition' }
+        ]));
+
+        const testQ = new GameObject(new Mesh(quadGeometry, testQuad));
+        testQ.position = new Vec3(-250, 200, 0);
+        testQ.orientation = radians(90);
+        testQ.scale = 50;
+
+        this.gameObjects.push(testQ);
 
         this.camera = new PerspectiveCamera();
     }
@@ -90,6 +103,8 @@ class Scene {
 
         // update camera
         this.camera.move(dt, keysPressed);
+
+        this.treeMaterial.wLiPos.set(new Vec3(Math.cos(t/5)*300, 200, Math.sin(t/5)*300));
 
         // draw objects
         for (const obj of this.gameObjects) {

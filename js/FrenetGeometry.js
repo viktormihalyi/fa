@@ -65,8 +65,6 @@ class FrenetGeometry {
         if (this.vertexCount === 0) {
             return;
         }
-        console.log('drawing ', this.vertexCount);
-
         const gl = this.gl;
         gl.bindVertexArray(this.inputLayout);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);

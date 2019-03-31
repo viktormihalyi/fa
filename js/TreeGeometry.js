@@ -74,6 +74,12 @@ class TreeGeometry {
         gl.vertexAttribPointer(4, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
+        this.branchWidth = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.branchWidth);
+        gl.enableVertexAttribArray(5);
+        gl.vertexAttribPointer(5, 1, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
         // element array buffer
         this.indexBuffer = gl.createBuffer();
 
@@ -98,6 +104,7 @@ class TreeGeometry {
         }
 
 
+        const widths = [];
         const vertexBuf = [];
         const normalBuf = [];
         const uvBuf = [];
@@ -131,6 +138,7 @@ class TreeGeometry {
 
                 if (false && node.children.length === 0) vertexBuf.push(circle_points[0]);
                 else vertexBuf.push(circle_points[j]);
+                widths.push(node.width);
                 normalBuf.push(normal_vector);
                 uvBuf.push(texture_coordinates);
             }
@@ -150,6 +158,7 @@ class TreeGeometry {
             }
         }
 
+        assert(vertexBuf.length === widths.length, 'wtf');
 
         // element array buffer uses 16 bit unsigned ints
         // so the tree.nodes size must be smaller than 2^16 = 65536
@@ -266,6 +275,9 @@ class TreeGeometry {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bitangents);
         gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(bitangentVectors), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.branchWidth);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(widths), gl.STATIC_DRAW);
     }
 
     draw(wireframe) {
