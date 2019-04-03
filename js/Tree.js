@@ -6,11 +6,11 @@ Math.seedrandom(7);
 const ATTRACTION_POINT_COUNT = 150;
 
 // attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(0, 250, 0);
-const CIRCLE_RADIUS = 100;
+const CIRCLE_CENTER = new Vec3(0, 350, 0);
+const CIRCLE_RADIUS = 120;
 
 // space colonization algorithm constants
-const INFL_MIN_DIST = 40;
+const INFL_MIN_DIST = 20;
 const INFL_MAX_DIST = 150;
 const BRANCH_LENGTH = 30;
 
@@ -25,7 +25,7 @@ const MAX_TREE_SIZE = 250;
 
 // how much the previous growing direction should affect the next node
 // 0 - not taken into consideration
-const PREVIOUS_DIR_POWER = 1;
+const PREVIOUS_DIR_POWER = 0.75;
 
 // width scales with each node
 const BRANCH_WIDTH_SCALE = 0.85;
@@ -84,6 +84,7 @@ class Tree {
         this.nodes = [];
         this.attractionPoints = [];
         this.middleNodes = [];
+        this.ending_nodes = [];
 
         // setup starting tree - just one one
         this.nodes.push(new TreeNode(
@@ -394,6 +395,16 @@ class Tree {
 
     dist_to_node(pos, node) {
         return node.pos.minus(pos).length();
+    }
+
+    add_ends() {
+        for (const node of this.nodes.filter(n => n.children.length === 0)) {
+            const ending_node_pos = node.pos.plus(node.dir.times(BRANCH_LENGTH*0.05));
+            const endingNode = new TreeNode(node, ending_node_pos, node.dir, node.width/2, node.normal);
+            node.children.push(endingNode);
+            this.nodes.push(endingNode);
+            this.ending_nodes.push(endingNode);
+        }
     }
 
     grow() {

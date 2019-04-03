@@ -1,6 +1,6 @@
 "use strict";
 
-const BG_COLOR = new Vec3(0.9, 0.9, 0.9);
+const BG_COLOR = new Vec3(240,248,255).over(255);
 
 class Scene {
     constructor(gl) {
@@ -17,6 +17,7 @@ class Scene {
             tree.grow();
         }
         tree.spline(1);
+        tree.add_ends();
         // tree.remove_intersecting_nodes(0.8);
 
         const treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
@@ -51,9 +52,11 @@ class Scene {
         leavesGeometry.setModelMatrices(
             tree.nodes
                 .filter(node => node.children.length === 0)
+                .map(node => node.parent)
                 .flatMap(node => [
                     node.getTransformationMatrix().scale(BRANCH_LENGTH).translate(node.pos),
-                    node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(90), node.dir).translate(node.pos)
+                    node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(120), node.dir).translate(node.pos),
+                    node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(240), node.dir).translate(node.pos),
                 ])
         );
         const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial));
@@ -84,7 +87,7 @@ class Scene {
         testQ.orientation = radians(90);
         testQ.scale = 50;
 
-        this.gameObjects.push(testQ);
+        // this.gameObjects.push(testQ);
 
         this.camera = new PerspectiveCamera();
     }

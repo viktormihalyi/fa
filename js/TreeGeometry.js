@@ -113,6 +113,7 @@ class TreeGeometry {
 
         assert(CIRCLE_RES % 2 === 0, 'odd circle_res');
 
+        const toends = [];
         const toconnect = [];
 
         const HALF_CIRCLE_RES = CIRCLE_RES / 2;
@@ -131,18 +132,23 @@ class TreeGeometry {
                 } else {
                     u = 1-(j-HALF_CIRCLE_RES)/HALF_CIRCLE_RES;
                 }
-                const texture_coordinates = new Vec2(
-                    u,
-                    node.v,
-                );
+                const texture_coordinates = new Vec2(u, node.v);
 
-                if (false && node.children.length === 0) vertexBuf.push(circle_points[0]);
-                else vertexBuf.push(circle_points[j]);
+                vertexBuf.push(circle_points[j]);
                 widths.push(node.width);
                 normalBuf.push(normal_vector);
                 uvBuf.push(texture_coordinates);
             }
+
+            if (node.children.length === 0) {
+                toends.push({mid: vertexBuf.length, c: node_to_circle_idx[i]});
+                vertexBuf.push(node.pos);
+                uvBuf.push(new Vec2(0, 0));
+                widths.push(node.width);
+                normalBuf.push(node.dir);
+            }
         }
+
 
         for (const node of tree.nodes) {
             if (SKIP_CYLINDER_AT_BIFURCATION) {
@@ -165,6 +171,17 @@ class TreeGeometry {
         assert(tree.nodes.length < 65536, 'too many nodes');
 
         const indexBuf = [];
+
+        for (const e of toends) {
+            const mid_i = e.mid;
+            const c_i = e.c;
+            for (let j = 0; j < CIRCLE_RES; j++) {
+                // triangle 1
+                indexBuf.push(mid_i);
+                indexBuf.push(c_i + j);
+                indexBuf.push(c_i + (j+1) % CIRCLE_RES);
+            }
+        }
 
         for (const spline of toconnect) {
             assert(spline.from+CIRCLE_RES-1 < vertexBuf.length, 'ok');
