@@ -16,8 +16,8 @@ class PerspectiveCamera {
         const radians = (x) => x / 180 * Math.PI;
         this.fov = radians(90);
         this.aspect = 1.0;
-        this.nearPlane = 0.1;
-        this.farPlane = 1000.0;
+        this.nearPlane = 1.0;
+        this.farPlane = 10000.0;
 
         this.speed = 150;
         this.dragSpeed = 0.003;

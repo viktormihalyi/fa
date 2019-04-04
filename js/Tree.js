@@ -3,7 +3,7 @@
 Math.seedrandom(7);
 
 // number of attraction points to generate
-const ATTRACTION_POINT_COUNT = 150;
+const ATTRACTION_POINT_COUNT = 250;
 
 // attraction points generation around a circle
 const CIRCLE_CENTER = new Vec3(0, 350, 0);
@@ -388,6 +388,13 @@ class Tree {
             direction,
             source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
             principal_normal);
+
+        // TODO fix growing on the same position?
+        for (const n of this.nodes) {
+            if (n.pos.minus(newNode.pos).length() < 0.1) {
+                return;
+            }
+        }
 
         source.children.push(newNode);
         this.nodes.push(newNode);

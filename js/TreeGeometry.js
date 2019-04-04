@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 8;
+const CIRCLE_RES = 5;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
 
@@ -111,7 +111,7 @@ class TreeGeometry {
 
         const node_to_circle_idx = new Array(tree.nodes.length*2);
 
-        assert(CIRCLE_RES % 2 === 0, 'odd circle_res');
+        // assert(CIRCLE_RES % 2 === 0, 'odd circle_res');
 
         const toends = [];
         const toconnect = [];

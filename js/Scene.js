@@ -18,6 +18,17 @@ class Scene {
         }
         tree.spline(1);
         tree.add_ends();
+
+        for (const node of tree.nodes) {
+            for (const nodeb of tree.nodes) {
+                if (node !== nodeb) {
+                    const dist = node.pos.minus(nodeb.pos).length();
+                    if (dist < 0.1) {
+                        console.log('bajvan', dist);
+                    }
+                }
+            }
+        }
         // tree.remove_intersecting_nodes(0.8);
 
         const treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
@@ -46,6 +57,7 @@ class Scene {
         const leafMaterial = new Material(gl, leavesShader);
         leafMaterial.leaves.set(new Texture2D(gl, `./leaves.png`));
         leafMaterial.leaves_alpha.set(new Texture2D(gl, `./leaves_alpha.png`));
+        leafMaterial.leaves_translucency.set(new Texture2D(gl, `./leaves_translucency.png`));
 
         const quadGeometry = new QuadGeometry(gl);
         const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);
@@ -76,7 +88,7 @@ class Scene {
         this.gameObjects = [];
         this.gameObjects.push(treeObject);
         this.gameObjects.push(leavesObject);
-        this.gameObjects.push(frenetFrames);
+        // this.gameObjects.push(frenetFrames);
 
         const testQuad = new Material(gl, Program.from(gl, 'quad.vert', 'quad.frag', [
             { position: 0, name: 'vertexPosition' }
