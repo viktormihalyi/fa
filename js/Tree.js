@@ -3,16 +3,17 @@
 Math.seedrandom(7);
 
 // number of attraction points to generate
-const ATTRACTION_POINT_COUNT = 250;
+const ATTRACTION_POINT_COUNT = 250*6;
 
 // attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(0, 350, 0);
+const CIRCLE_CENTER = new Vec3(0, 300, 0);
 const CIRCLE_RADIUS = 120;
 
 // space colonization algorithm constants
-const INFL_MIN_DIST = 20;
+const INFL_MIN_DIST = 12;
 const INFL_MAX_DIST = 150;
 const BRANCH_LENGTH = 30;
+const BRANCH_LENGTH_SCALE = 0.97;
 
 // starting tree node values
 const TREE_INITIAL_POS = new Vec3(0, 0, 0);
@@ -28,16 +29,17 @@ const MAX_TREE_SIZE = 250;
 const PREVIOUS_DIR_POWER = 0.75;
 
 // width scales with each node
-const BRANCH_WIDTH_SCALE = 0.85;
+const BRANCH_WIDTH_SCALE = 0.82;
 
 class TreeNode {
-    constructor(parent, pos, dir, width, normal) {
+    constructor(parent, pos, dir, width, normal, br) {
         this.parent = parent;
         this.pos = pos;
         this.dir = dir.clone().normalize();
         this.width = width;
         this.children = [];
         this.normal = normal.clone().normalize();
+        this.branch_length = br;
     }
 
     binormal() {
@@ -58,11 +60,11 @@ class TreeNode {
     }
 
     clone() {
-        return new TreeNode(null, this.pos, this.dir, this.width, this.normal);
+        return new TreeNode(null, this.pos, this.dir, this.width, this.normal, this.br);
     }
 
     opposite() {
-        return new TreeNode(null, this.pos, this.dir.times(-1), this.width, this.normal.times(-1));
+        return new TreeNode(null, this.pos, this.dir.times(-1), this.width, this.normal.times(-1), this.br);
     }
 
     getTransformationMatrix() {
@@ -92,7 +94,8 @@ class Tree {
             TREE_INITIAL_POS,
             TREE_INITIAL_DIRECTION,
             TREE_STARTING_WIDTH,
-            TREE_INITIAL_NORMAL));
+            TREE_INITIAL_NORMAL,
+            BRANCH_LENGTH));
 
         // generate attraction points
         while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
@@ -117,7 +120,7 @@ class Tree {
         const interpolated_dir    = catmull_rom_spline(prev.dir,    nodeA.dir,    nodeB.dir,    grandchild.dir,    t);
         const interpolated_normal = catmull_rom_spline(prev.normal, nodeA.normal, nodeB.normal, grandchild.normal, t);
 
-        return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(nodeA.width, nodeB.width, t), interpolated_normal);
+        return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(nodeA.width, nodeB.width, t), interpolated_normal, lerp(nodeA.branch_length, nodeB.branch_length, t));
     }
 
     add_middle_spline() {
@@ -147,7 +150,7 @@ class Tree {
                 const middle_normalb = Tree.grow_rmf_normal_raw(childB.pos, childB.dir.times(-1), childB.normal.times(-1), b_to_a_normal);
 
                 {
-                    const middle_node = new TreeNode(childA_opposite, middle_point, a_to_b_normal, middle_width, middle_normal);
+                    const middle_node = new TreeNode(childA_opposite, middle_point, a_to_b_normal, middle_width, middle_normal, childA.branch_length);
 
                     const bcopy = childB.clone();
 
@@ -358,18 +361,18 @@ class Tree {
         return Tree.grow_rmf_normal({pos, dir, normal}, direction);
     }
 
-    grow_from_no(source, direction) {
-        const principal_normal = Tree.grow_rmf_normal(source, direction);
+    // grow_from_no(source, direction) {
+    //     const principal_normal = Tree.grow_rmf_normal(source, direction);
 
-        const angle = source.dir.dot(direction);
+    //     const angle = source.dir.dot(direction);
 
-        return new TreeNode(
-            source,
-            source.pos.plus(direction.times(BRANCH_LENGTH)),
-            direction,
-            source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
-            principal_normal);
-    }
+    //     return new TreeNode(
+    //         source,
+    //         source.pos.plus(direction.times(BRANCH_LENGTH)),
+    //         direction,
+    //         source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
+    //         principal_normal);
+    // }
 
     growFrom(source, direction) {
         // frenet frame
@@ -384,10 +387,11 @@ class Tree {
 
         const newNode = new TreeNode(
             source,
-            source.pos.plus(direction.times(BRANCH_LENGTH)),
+            source.pos.plus(direction.times(source.branch_length)),
             direction,
             source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
-            principal_normal);
+            principal_normal,
+            source.branch_length * BRANCH_LENGTH_SCALE);
 
         // TODO fix growing on the same position?
         for (const n of this.nodes) {
@@ -407,7 +411,7 @@ class Tree {
     add_ends() {
         for (const node of this.nodes.filter(n => n.children.length === 0)) {
             const ending_node_pos = node.pos.plus(node.dir.times(BRANCH_LENGTH*0.05));
-            const endingNode = new TreeNode(node, ending_node_pos, node.dir, node.width/2, node.normal);
+            const endingNode = new TreeNode(node, ending_node_pos, node.dir, node.width/2, node.normal, node.branch_length/2);
             node.children.push(endingNode);
             this.nodes.push(endingNode);
             this.ending_nodes.push(endingNode);

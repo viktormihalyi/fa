@@ -113,7 +113,7 @@ function roundVec3(vec) {
 // centripetal: alpha = 0.5
 // uniform:     alpha = 0
 // chordal:     alpha = 1
-const ALPHA = 0;
+const ALPHA = 1;
 const EPSILON = 1e-2;
 
 // https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline

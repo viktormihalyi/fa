@@ -11,7 +11,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     in vec3 wLight;
     in vec3 wEye;
     in vec2 texCoord;
-    in float branchWidth;
     in mat3 TBN;
 
     out vec4 fragmentColor;

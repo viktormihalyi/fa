@@ -11,7 +11,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     uniform sampler2D leaves_translucency;
 
     void main(void) {
-
         vec3 color = texture(leaves, uv).rgb;
         float alpha = texture(leaves_alpha, uv).r;
         vec3 translucency = texture(leaves_translucency, uv).rgb;

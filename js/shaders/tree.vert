@@ -3,9 +3,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     in vec3 vertexNormal;
     in vec2 vertexTexCoord;
 
-    in float width;
-    out float branchWidth;
-
     in vec3 tangent;
     in vec3 bitangent;
 
@@ -27,7 +24,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     // #define normal
 
     void main(void) {
-        branchWidth = width;
         wEye = camera.wEye;
 
         mat4 modelMatrix = mat4(

@@ -37,7 +37,6 @@ class Scene {
             { position: 2, name: 'vertexTexCoord' },
             { position: 3, name: 'tangent' },
             { position: 4, name: 'bitangent' },
-            { position: 5, name: 'width' },
         ]);
         const treeGeometry = new TreeGeometry(gl);
         treeGeometry.setPoints(tree);
@@ -55,9 +54,9 @@ class Scene {
         ]);
 
         const leafMaterial = new Material(gl, leavesShader);
-        leafMaterial.leaves.set(new Texture2D(gl, `./leaves.png`));
-        leafMaterial.leaves_alpha.set(new Texture2D(gl, `./leaves_alpha.png`));
-        leafMaterial.leaves_translucency.set(new Texture2D(gl, `./leaves_translucency.png`));
+        leafMaterial.leaves.set(new Texture2D(gl, `./leaf01_color.png`));
+        leafMaterial.leaves_alpha.set(new Texture2D(gl, `./leaf01_alpha.png`));
+        leafMaterial.leaves_translucency.set(new Texture2D(gl, `./leaf01_translucency.png`));
 
         const quadGeometry = new QuadGeometry(gl);
         const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);
@@ -66,9 +65,9 @@ class Scene {
                 .filter(node => node.children.length === 0)
                 .map(node => node.parent)
                 .flatMap(node => [
-                    node.getTransformationMatrix().scale(BRANCH_LENGTH).translate(node.pos),
-                    node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(120), node.dir).translate(node.pos),
-                    node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(240), node.dir).translate(node.pos),
+                    node.getTransformationMatrix().scale(BRANCH_LENGTH/4.0).translate(node.pos.plus(node.parent.pos).over(2).plus(node.binormal().times(7))),
+                    // node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(120), node.dir).translate(node.pos),
+                    // node.getTransformationMatrix().scale(BRANCH_LENGTH).rotate(radians(240), node.dir).translate(node.pos),
                 ])
         );
         const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial));
@@ -88,7 +87,7 @@ class Scene {
         this.gameObjects = [];
         this.gameObjects.push(treeObject);
         this.gameObjects.push(leavesObject);
-        // this.gameObjects.push(frenetFrames);
+        this.gameObjects.push(frenetFrames);
 
         const testQuad = new Material(gl, Program.from(gl, 'quad.vert', 'quad.frag', [
             { position: 0, name: 'vertexPosition' }
