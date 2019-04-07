@@ -3,7 +3,7 @@
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 4;
 const HALF_CIRCLE_RES = CIRCLE_RES / 2;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
@@ -17,7 +17,7 @@ const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 //      - r: radius
 //      - center: Vec3 center coordinate
 //      - a, b: 2 Vec3s defining the plane of the circle
-function circle(theta, r, center, a, b) {
+function parametric_circle_3d(theta, r, center, a, b) {
     return    a.times(Math.cos(theta))
         .plus(b.times(Math.sin(theta)))
         .times(r)
@@ -27,7 +27,7 @@ function circle(theta, r, center, a, b) {
 function getCirclePoints(pos, normal, binormal, width) {
     const points = [];
     for (let j = 0; j < CIRCLE_RES; j++) {
-        points.push(circle(CRICLE_STEP*j, width, pos, binormal, normal));
+        points.push(parametric_circle_3d(CRICLE_STEP*j, width, pos, binormal, normal));
     }
     return points;
 }
@@ -36,16 +36,6 @@ function getCirclePointsForNode(node) {
     return getCirclePoints(node.pos, node.normal, node.binormal(), node.width);
 }
 
-
-class VertexData {
-    constructor(position, normal, uv, tangent, bitangent) {
-        this.position = position;
-        this.normal = normal;
-        this.uv = uv;
-        this.tangent = tangent;
-        this.bitangent = bitangent;
-    }
-}
 
 class TreeGeometry {
     constructor(gl) {
@@ -113,7 +103,7 @@ class TreeGeometry {
         recursive_set_v(tree.nodes[0], 0);
 
 
-        const vertex_data = [];
+        const raw_vertex_data = [];
 
         for (const node of tree.nodes) {
             for (const child of node.children) {
@@ -142,27 +132,32 @@ class TreeGeometry {
                     }
 
                     // triangle 1
-                    vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
-                    vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
-                    vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
+                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
 
                     // triangle 2
-                    vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
-                    vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
-                    vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
+                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
                 }
             }
         }
-        this.vertex_ccount = vertex_data.length;
+        this.vertex_ccount = raw_vertex_data.length;
 
         const unique_vertices = [];
         const index_buffer = [];
 
         const MAX_DIST_DIFF = 0.1;
-        console.log(`there are ${vertex_data.length} vertices`);
-        console.log('selecting unique vertices...');
+        console.log(`vertices count: ${raw_vertex_data.length}, running vertex indexer...`);
         const tmp = new Vec3();
-        for (const vd of vertex_data) {
+        let i = 0;
+
+        // index vertices
+        for (const vd of raw_vertex_data) {
+            if (i % 2000 === 0) console.log(`${Math.round(i / raw_vertex_data.length * 100)}%`);
+            i++;
+
             let is_new_vertex = true;
 
             for (let i = 0; i < unique_vertices.length; i++) {
@@ -178,8 +173,7 @@ class TreeGeometry {
                 index_buffer.push(unique_vertices.length-1);
             }
         }
-        console.log(`done, found ${unique_vertices.length} unique vertices`);
-        console.log(`done, index buffer size is ${index_buffer.length}`);
+        console.log(`done, unique vertex count: ${unique_vertices.length}, index buffer size: ${index_buffer.length}`);
 
         this.vertex_ccount = unique_vertices.length;
         this.index_count = index_buffer.length;

@@ -6,7 +6,7 @@ Math.seedrandom(7);
 const ATTRACTION_POINT_COUNT = 250*6;
 
 // attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(0, 300, 0);
+const CIRCLE_CENTER = new Vec3(0, 250, 0);
 const CIRCLE_RADIUS = 120;
 
 // space colonization algorithm constants
@@ -19,7 +19,7 @@ const BRANCH_LENGTH_SCALE = 0.97;
 const TREE_INITIAL_POS = new Vec3(0, 0, 0);
 const TREE_INITIAL_DIRECTION = new Vec3(0, 1, 0);
 const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
-const TREE_STARTING_WIDTH = 15;
+const TREE_STARTING_WIDTH = 12;
 
 // stop grwoing after reaching this many tree nodes
 const MAX_TREE_SIZE = 250;
@@ -30,6 +30,7 @@ const PREVIOUS_DIR_POWER = 0.75;
 
 // width scales with each node
 const BRANCH_WIDTH_SCALE = 0.82;
+
 
 class TreeNode {
     constructor(parent, pos, dir, width, normal, br) {
@@ -67,16 +68,8 @@ class TreeNode {
         return new TreeNode(null, this.pos, this.dir.times(-1), this.width, this.normal.times(-1), this.br);
     }
 
-    getTransformationMatrix() {
-        const t = this.dir;
-        const b = this.binormal();
-        const n = this.normal;
-        return new Mat4(
-            t.x, t.y, t.z, 0,
-            b.x, b.y, b.z, 0,
-            n.x, n.y, n.z, 0,
-            0,   0,   0,   1
-        );
+    getOrientationMatrix() {
+        return createOrientationMatrix(this.dir, this.normal, this.binormal());
     }
 }
 

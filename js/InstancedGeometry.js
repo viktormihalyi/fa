@@ -3,6 +3,8 @@ class InstancedGeometry {
     constructor(gl, geometry, start_modelm_vertex_attrib, usesIndexArray) {
         assert(geometry.vertexCount !== undefined, 'no vertexCount on geometry');
         assert(geometry.inputLayout !== undefined, 'no inputLayout on geometry');
+
+        if (usesIndexArray)
         assert(geometry.indexBuffer !== undefined, 'no indexBuffer on geometry');
 
         this.gl = gl;

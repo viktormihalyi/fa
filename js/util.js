@@ -12,6 +12,14 @@ function degrees(x) {
     return x * 180 / Math.PI;
 }
 
+function rad(x) {
+    return radians(x);
+}
+
+function deg(x) {
+    return degrees(x);
+}
+
 function randomBetween(min, max) {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
@@ -145,4 +153,18 @@ function tj(ti, pi, pj) {
 function normalVectorForTriangle(node1, node2, node3) {
     const area = node2.minus(node1).length() * node2.minus(node3).length() / 2;
     return node2.minus(node1).cross(node2.minus(node3)).times(area);
+}
+
+// tangent, normal, binormals must be normalized
+function createOrientationMatrix(tangent, normal, binormal) {
+    const t = tangent;
+    const b = binormal;
+    const n = normal;
+    // wtf
+    return new Mat4(
+        b.x, b.y, b.z, 0,
+        t.x, t.y, t.z, 0,
+        n.x, n.y, n.z, 0,
+        0,   0,   0,   1
+    );
 }

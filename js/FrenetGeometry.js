@@ -1,6 +1,6 @@
 "use strict";
 
-const VEC_LENGTH = 3;
+const VEC_LENGTH = 5;
 
 const TANGENT_COLOR  = new Vec3(0, 0, 1); // blue
 const NORMAL_COLOR   = new Vec3(1, 0, 0); // red
