@@ -1,48 +1,48 @@
-function assert(condition, message) {
+function assert(condition: boolean, message: string): void {
     if (!condition) {
         throw new Error(`assertion failed: ${message}`)
     }
 }
 
-function radians(x) {
+function radians(x: number): number {
     return x / 180 * Math.PI;
 }
 
-function degrees(x) {
+function degrees(x: number): number {
     return x * 180 / Math.PI;
 }
 
-function rad(x) {
+function rad(x: number): number {
     return radians(x);
 }
 
-function deg(x) {
+function deg(x: number): number {
     return degrees(x);
 }
 
-function randomBetween(min, max) {
+function randomBetween(min: number, max: number): number {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
 
-function lerp(a, b, t) {
+function lerp(a: number, b: number, t: number): number {
     return a * (1 - t) + b * t;
 }
 
-function round_to_tenths(x) {
+function round_to_tenths(x: number): number {
     return Math.round(x*10)/10;
 }
 
 // vec3 to string
-function pv(vec) {
+function pv(vec: Vec3): string {
     return `(${round_to_tenths(vec.x)}, ${round_to_tenths(vec.y)}, ${round_to_tenths(vec.z)})`
 }
 
-
-function project_to_plane(A, plane_normal) {
+function project_to_plane(A: Vec3, plane_normal: Vec3): Vec3 {
     return plane_normal.cross(A.cross(plane_normal));
 }
 
-function furthestPointInDirection(listOfPoints, direction) {
+
+function furthestPointInDirection(listOfPoints: Vec3[], direction: Vec3): Vec3 | null {
     assert(listOfPoints.length > 0, 'empty array');
 
     let furthestPoint = null;
@@ -60,7 +60,7 @@ function furthestPointInDirection(listOfPoints, direction) {
 }
 
 
-function distanceToLineSegment(point, start, end) {
+function distanceToLineSegment(point: Vec3, start: Vec3, end: Vec3) {
     const l2 = start.minus(end).length2();
     if (l2 === 0.0) {
         return point.minus(start).length();
@@ -77,7 +77,7 @@ const _2 = new Vec3();
 const _3 = new Vec3();
 const _4 = new Vec3();
 
-function distanceToLineSegment2(point, start, end) {
+function distanceToLineSegment2(point: Vec3, start: Vec3, end: Vec3): number {
     _0.set(start).sub(end);
     _1.set(point).sub(start);
 
@@ -93,15 +93,15 @@ function distanceToLineSegment2(point, start, end) {
     return _4.length();
 }
 
-function vec3ArrayToFloat32Array(array) {
-    return new Float32Array(array.flatMap((vec) => [vec.x, vec.y, vec.z]));
+function vec3ArrayToFloat32Array(array: Vec3[]): Float32Array {
+    return new Float32Array(array.flatMap((vec: Vec3): number[] => [vec.x, vec.y, vec.z]));
 }
 
-function vec2ArrayToFloat32Array(array) {
-    return new Float32Array(array.flatMap((vec) => [vec.x, vec.y]));
+function vec2ArrayToFloat32Array(array: Vec2[]): Float32Array {
+    return new Float32Array(array.flatMap((vec: Vec2): number[] => [vec.x, vec.y]));
 }
 
-function lerpVec3(vec0, vec1, t) {
+function lerpVec3(vec0: Vec3, vec1: Vec3, t: number): Vec3 {
     return new Vec3(
         lerp(vec0.x, vec1.x, t),
         lerp(vec0.y, vec1.y, t),
@@ -109,7 +109,7 @@ function lerpVec3(vec0, vec1, t) {
     );
 }
 
-function roundVec3(vec) {
+function roundVec3(vec: Vec3): Vec3 {
     return new Vec3(
         Math.round(vec.x),
         Math.round(vec.y),
@@ -126,7 +126,7 @@ const EPSILON = 1e-2;
 
 // https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
 // centripetal catmull rom spline
-function catmull_rom_spline(p0, p1, p2, p3, t) {
+function catmull_rom_spline(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): Vec3 {
     const t0 = 0;
     const t1 = tj(t0, p0, p1);
     const t2 = tj(t1, p1, p2);
@@ -145,18 +145,18 @@ function catmull_rom_spline(p0, p1, p2, p3, t) {
     return c;
 }
 
-function tj(ti, pi, pj) {
+function tj(ti: number, pi: Vec3, pj: Vec3): number {
     let len = Math.max(EPSILON, pj.minus(pi).length());
     return Math.pow(len, ALPHA) + ti;
 }
 
-function normalVectorForTriangle(node1, node2, node3) {
+function normalVectorForTriangle(node1: Vec3, node2: Vec3, node3: Vec3): Vec3 {
     const area = node2.minus(node1).length() * node2.minus(node3).length() / 2;
     return node2.minus(node1).cross(node2.minus(node3)).times(area);
 }
 
 // tangent, normal, binormals must be normalized
-function createOrientationMatrix(tangent, normal, binormal) {
+function createOrientationMatrix(tangent: Vec3, normal: Vec3, binormal: Vec3): Mat4 {
     const t = tangent;
     const b = binormal;
     const n = normal;

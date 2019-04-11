@@ -1,9 +1,7 @@
-"use strict";
-
 
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 4;
+const CIRCLE_RES = 5;
 const HALF_CIRCLE_RES = CIRCLE_RES / 2;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
@@ -17,14 +15,14 @@ const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 //      - r: radius
 //      - center: Vec3 center coordinate
 //      - a, b: 2 Vec3s defining the plane of the circle
-function parametric_circle_3d(theta, r, center, a, b) {
+function parametric_circle_3d(theta: number, r: number, center: Vec3, a: Vec3, b: Vec3) {
     return    a.times(Math.cos(theta))
         .plus(b.times(Math.sin(theta)))
         .times(r)
         .plus(center);
 }
 
-function getCirclePoints(pos, normal, binormal, width) {
+function getCirclePoints(pos: Vec3, normal: Vec3, binormal: Vec3, width: number): Vec3[] {
     const points = [];
     for (let j = 0; j < CIRCLE_RES; j++) {
         points.push(parametric_circle_3d(CRICLE_STEP*j, width, pos, binormal, normal));
@@ -32,69 +30,80 @@ function getCirclePoints(pos, normal, binormal, width) {
     return points;
 }
 
-function getCirclePointsForNode(node) {
+function getCirclePointsForNode(node: TreeNode): Vec3[] {
     return getCirclePoints(node.pos, node.normal, node.binormal(), node.width);
 }
 
 
-class TreeGeometry {
-    constructor(gl) {
-        this.connection_count = 0;
+class TreeGeometry implements IGeometry {
+    public gl: WebGL2RenderingContext;
+    public vao: WebGLVertexArrayObject;
+    public vertexBuffer: WebGLBuffer;
+    public normalBuffer: WebGLBuffer;
+    public textureCoordBuffer: WebGLBuffer;
+    public tangents: WebGLBuffer;
+    public bitangents: WebGLBuffer;
+    public branchWidth: WebGLBuffer;
+    public indexBuffer: WebGLBuffer;
+    public index_count: number;
 
+    constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
 
-        this.vao = gl.createVertexArray();
+        this.index_count = 0;
+
+        this.vao = gl.createVertexArray()!;
         gl.bindVertexArray(this.vao);
 
-        this.vertexBuffer = gl.createBuffer();
+        this.vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.normalBuffer = gl.createBuffer();
+        this.normalBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
         gl.enableVertexAttribArray(1);
         gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.textureCoordBuffer = gl.createBuffer();
+        this.textureCoordBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
         gl.enableVertexAttribArray(2);
         gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.tangents = gl.createBuffer();
+        this.tangents = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.tangents);
         gl.enableVertexAttribArray(3);
         gl.vertexAttribPointer(3, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.bitangents = gl.createBuffer();
+        this.bitangents = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bitangents);
         gl.enableVertexAttribArray(4);
         gl.vertexAttribPointer(4, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        this.branchWidth = gl.createBuffer();
+        this.branchWidth = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.branchWidth);
         gl.enableVertexAttribArray(5);
         gl.vertexAttribPointer(5, 1, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         // element array buffer
-        this.indexBuffer = gl.createBuffer();
+        this.indexBuffer = gl.createBuffer()!;
 
         gl.bindVertexArray(null);
     }
 
-    setPoints(tree) {
+    setPoints(tree: Tree): void {
         assert(tree.nodes.length < 65536, 'too many nodes, cannot be indexed');
 
         const gl = this.gl;
 
         // set v coordinates for textures
-        function recursive_set_v(root, n) {
+        function recursive_set_v(root: TreeNode, n: number) {
             root.v = n;
             for (const child of root.children) {
                 recursive_set_v(child, n + 1);
@@ -124,7 +133,7 @@ class TreeGeometry {
 
                     const nextidx = (i+1) % CIRCLE_RES;
 
-                    let u;
+                    let u: number;
                     if (i < HALF_CIRCLE_RES) {
                         u = i/HALF_CIRCLE_RES;
                     } else {
@@ -132,25 +141,25 @@ class TreeGeometry {
                     }
 
                     // triangle 1
-                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
-                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
-                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v)));
+                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.v)));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v)));
 
                     // triangle 2
-                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
-                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v),  null, null));
-                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u, child.v), null, null));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v)));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v)));
+                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u, child.v)));
                 }
             }
         }
-        this.vertex_ccount = raw_vertex_data.length;
+        // this.vertex_ccount = raw_vertex_data.length;
 
-        const unique_vertices = [];
-        const index_buffer = [];
+        const unique_vertices: VertexData[] = [];
+        const index_buffer: number[] = [];
 
         const MAX_DIST_DIFF = 0.1;
         console.log(`vertices count: ${raw_vertex_data.length}, running vertex indexer...`);
-        const tmp = new Vec3();
+        // const tmp = new Vec3();
         let i = 0;
 
         // index vertices
@@ -162,7 +171,8 @@ class TreeGeometry {
 
             for (let i = 0; i < unique_vertices.length; i++) {
                 const vd2 = unique_vertices[i];
-                if (tmp.setDifference(vd.position, vd2.position).length2() < MAX_DIST_DIFF) {
+                // if (tmp.setDifference(vd.position.minus(vd2.position)).length2() < MAX_DIST_DIFF) {
+                if (vd.position.minus(vd2.position).length2() < MAX_DIST_DIFF) {
                     index_buffer.push(i);
                     is_new_vertex = false;
                     break;
@@ -175,13 +185,13 @@ class TreeGeometry {
         }
         console.log(`done, unique vertex count: ${unique_vertices.length}, index buffer size: ${index_buffer.length}`);
 
-        this.vertex_ccount = unique_vertices.length;
+        // this.vertex_ccount = unique_vertices.length;
         this.index_count = index_buffer.length;
 
         // average normals, find tangents and bitangents
         for (let i = 0; i < unique_vertices.length; i++) {
             // all triangles with the current vertex
-            const triangleIndices = [];
+            const triangleIndices: [number, number, number][] = [];
             // triangleIndices = [[vertex_idx1, vertex_idx2, vertex_idx3], ...]
 
             for (let j = 0; j < index_buffer.length; j++) {
@@ -264,13 +274,13 @@ class TreeGeometry {
         gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(unique_vertices.map(vd => vd.bitangent)), gl.STATIC_DRAW);
     }
 
-    draw(wireframe) {
+    draw(): void {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
-        if (wireframe) {
+        if (false) {
             gl.drawElements(gl.LINES, this.index_count, gl.UNSIGNED_SHORT, 0);
         } else {
             gl.drawElements(gl.TRIANGLES, this.index_count, gl.UNSIGNED_SHORT, 0);

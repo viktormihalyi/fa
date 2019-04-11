@@ -1,17 +1,24 @@
-"use strict";
-class LeafGeometry {
-    constructor(gl) {
+class TwigGeometry implements IGeometry {
+    public gl: WebGL2RenderingContext;
+
+    public inputLayout: WebGLVertexArrayObject;
+    public vertexBuffer: WebGLBuffer;
+    public normalBuffer: WebGLBuffer;
+
+    public vertexCount: number;
+
+    constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
 
-        this.inputLayout = gl.createVertexArray();
+        this.inputLayout = gl.createVertexArray()!;
         gl.bindVertexArray(this.inputLayout);
 
-        this.vertexBuffer = gl.createBuffer();
+        this.vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
-        this.normalBuffer = gl.createBuffer();
+        this.normalBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
         gl.enableVertexAttribArray(1);
         gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
@@ -37,22 +44,22 @@ class LeafGeometry {
             const nextidx = (i+1) % CIRCLE_RES;
 
             // triangle 1
-            raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(to_pos).normalize(), null, null, null));
-            raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(from_pos).normalize(),  null, null, null));
-            raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(from_pos).normalize(),  null, null, null));
+            raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(to_pos).normalize()));
+            raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(from_pos).normalize()));
+            raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(from_pos).normalize()));
 
             // triangle 2
-            raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(to_pos).normalize(), null, null, null));
-            raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(from_pos).normalize(),  null, null, null));
-            raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(to_pos).normalize(), null, null, null));
+            raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(to_pos).normalize()));
+            raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(from_pos).normalize()));
+            raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(to_pos).normalize()));
         }
 
         for (let i = 0; i < CIRCLE_RES; i++) {
             const nextidx = (i+1) % CIRCLE_RES;
             // triangle 1
-            raw_vertex_data.push(new VertexData(to[i], new Vec3(0, 1, 0), null, null, null));
-            raw_vertex_data.push(new VertexData(to_pos, new Vec3(0, 1, 0), null, null, null));
-            raw_vertex_data.push(new VertexData(to[nextidx], new Vec3(0, 1, 0), null, null, null));
+            raw_vertex_data.push(new VertexData(to[i], new Vec3(0, 1, 0)));
+            raw_vertex_data.push(new VertexData(to_pos, new Vec3(0, 1, 0)));
+            raw_vertex_data.push(new VertexData(to[nextidx], new Vec3(0, 1, 0)));
         }
 
         this.vertexCount = raw_vertex_data.length;
@@ -65,7 +72,7 @@ class LeafGeometry {
 
     }
 
-    draw() {
+    draw(): void {
         const gl = this.gl;
         gl.bindVertexArray(this.inputLayout);
         gl.drawArrays(gl.TRIANGLES, 0, this.vertexCount);

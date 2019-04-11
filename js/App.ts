@@ -1,16 +1,24 @@
 "use strict";
 class App {
-    constructor(canvas, status) {
+    // serves as a registry for textures or models being loaded
+    public static pendingResources: any = {};
+
+    private gl: WebGL2RenderingContext;
+    private keysPressed: any;
+    private canvas: HTMLCanvasElement;
+    private status: HTMLElement;
+    private scene: Scene;
+
+    constructor(canvas: HTMLCanvasElement, status: HTMLElement) {
         this.canvas = canvas;
         this.status = status;
         // obtain WebGL context
-        this.gl = canvas.getContext("webgl2");
+        this.gl = canvas.getContext("webgl2")!;
         if (this.gl === null) {
             throw new Error("Browser does not support WebGL2");
         }
         this.keysPressed = {};
-        // serves as a registry for textures or models being loaded
-        this.gl.pendingResources = {};
+
         // create a simple scene
         this.scene = new Scene(this.gl);
         this.resize();
@@ -31,24 +39,25 @@ class App {
         document.onkeyup = (event) => {
             this.keysPressed[keyboardMap[event.keyCode]] = false;
         };
-        this.canvas.onmousedown = (event) => {
-            this.scene.onmousedown(event);
+        this.canvas.onmousedown = () => {
+            this.scene.onmousedown();
         };
         this.canvas.onmousemove = (event) => {
             this.scene.onmousemove(event);
             event.stopPropagation();
         };
-        this.canvas.onmouseout = (event) => {
+        this.canvas.onmouseout = () => {
+            this.scene.onmouseup();
         };
-        this.canvas.onmouseup = (event) => {
-            this.scene.onmouseup(event);
+        this.canvas.onmouseup = () => {
+            this.scene.onmouseup();
         };
         window.addEventListener('resize', () => this.resize());
         window.requestAnimationFrame(() => this.update());
     }
     // animation frame update
     update() {
-        const pendingResourceNames = Object.keys(this.gl.pendingResources);
+        const pendingResourceNames = Object.keys(App.pendingResources);
         if (pendingResourceNames.length === 0) {
             // animate and draw scene
             this.scene.update(this.gl, this.keysPressed);
@@ -65,10 +74,10 @@ class App {
 let app;
 // entry point from HTML
 window.addEventListener('load', function () {
-    const canvas = document.getElementById("canvas");
-    const status = document.getElementById("status");
+    const canvas = document.getElementById("canvas")!;
+    const status = document.getElementById("status")!;
     status.innerText = "loading...";
 
-    app = new App(canvas, status);
+    app = new App(<HTMLCanvasElement>canvas, status);
     app.registerEventHandlers();
 });

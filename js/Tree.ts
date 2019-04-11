@@ -1,6 +1,4 @@
-"use strict";
-
-Math.seedrandom(7);
+// Math.seedrandom(7);
 
 // number of attraction points to generate
 const ATTRACTION_POINT_COUNT = 250*6;
@@ -26,32 +24,42 @@ const MAX_TREE_SIZE = 250;
 
 // how much the previous growing direction should affect the next node
 // 0 - not taken into consideration
-const PREVIOUS_DIR_POWER = 0.75;
+const PREVIOUS_DIR_POWER = 0.8;
 
 // width scales with each node
 const BRANCH_WIDTH_SCALE = 0.82;
 
 
 class TreeNode {
-    constructor(parent, pos, dir, width, normal, br) {
+    public parent: TreeNode | null;
+    public children: TreeNode[];
+    public pos: Vec3;
+    public tangent: Vec3;
+    public normal: Vec3;
+    public width: number;
+    public branch_length: number;
+    public v: number;
+
+    constructor(parent: TreeNode|null, pos: Vec3, dir: Vec3, width: number, normal: Vec3, br = 0) {
         this.parent = parent;
         this.pos = pos;
-        this.dir = dir.clone().normalize();
+        this.tangent = dir.clone().normalize();
         this.width = width;
         this.children = [];
         this.normal = normal.clone().normalize();
         this.branch_length = br;
+        this.v = 0;
     }
 
-    binormal() {
-        return this.dir.cross(this.normal).normalize();
+    binormal(): Vec3 {
+        return this.tangent.cross(this.normal).normalize();
     }
 
-    getDominantChild() {
+    getDominantChild(): TreeNode | null {
         let dominantChild = null;
         let smallestAngle = Number.MAX_SAFE_INTEGER;
         for (let child of this.children) {
-            const angle = this.dir.dot(child.dir);
+            const angle = this.tangent.dot(child.tangent);
             if (angle < smallestAngle) {
                 smallestAngle = angle;
                 dominantChild = child;
@@ -60,21 +68,26 @@ class TreeNode {
         return dominantChild;
     }
 
-    clone() {
-        return new TreeNode(null, this.pos, this.dir, this.width, this.normal, this.br);
+    clone(): TreeNode {
+        return new TreeNode(null, this.pos, this.tangent, this.width, this.normal, this.branch_length);
     }
 
-    opposite() {
-        return new TreeNode(null, this.pos, this.dir.times(-1), this.width, this.normal.times(-1), this.br);
+    opposite(): TreeNode {
+        return new TreeNode(null, this.pos, this.tangent.times(-1), this.width, this.normal.times(-1), this.branch_length);
     }
 
-    getOrientationMatrix() {
-        return createOrientationMatrix(this.dir, this.normal, this.binormal());
+    getOrientationMatrix(): Mat4 {
+        return createOrientationMatrix(this.tangent, this.normal, this.binormal());
     }
 }
 
 // http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
 class Tree {
+    public nodes: TreeNode[];
+    public attractionPoints: Vec3[];
+    public middleNodes: TreeNode[];
+    public ending_nodes: TreeNode[];
+
     constructor() {
         this.nodes = [];
         this.attractionPoints = [];
@@ -105,18 +118,18 @@ class Tree {
 
     // return a new node
     // parent is null
-    static interpolate_node_between(nodeA, nodeB, t) {
+    static interpolate_node_between(nodeA: TreeNode, nodeB: TreeNode, t: number): TreeNode {
         const prev = nodeA.parent || nodeA;
         const grandchild = nodeB.getDominantChild() || nodeB;
 
         const interpolated_pos    = catmull_rom_spline(prev.pos,    nodeA.pos,    nodeB.pos,    grandchild.pos,    t);
-        const interpolated_dir    = catmull_rom_spline(prev.dir,    nodeA.dir,    nodeB.dir,    grandchild.dir,    t);
+        const interpolated_dir    = catmull_rom_spline(prev.tangent,    nodeA.tangent,    nodeB.tangent,    grandchild.tangent,    t);
         const interpolated_normal = catmull_rom_spline(prev.normal, nodeA.normal, nodeB.normal, grandchild.normal, t);
 
         return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(nodeA.width, nodeB.width, t), interpolated_normal, lerp(nodeA.branch_length, nodeB.branch_length, t));
     }
 
-    add_middle_spline() {
+    add_middle_spline(): void {
         for (const s of this.middleNodes) {
             this.nodes.splice(this.nodes.indexOf(s), 1);
         }
@@ -139,8 +152,8 @@ class Tree {
                 const childB_opposite = childB.opposite();
 
                 const middle_width = (childA.width + childB.width) / 2.1;
-                const middle_normal = Tree.grow_rmf_normal_raw(childA.pos, childA.dir.times(-1), childA.normal.times(-1), a_to_b_normal);
-                const middle_normalb = Tree.grow_rmf_normal_raw(childB.pos, childB.dir.times(-1), childB.normal.times(-1), b_to_a_normal);
+                const middle_normal = Tree.grow_rmf_normal_raw(childA.pos, childA.tangent.times(-1), childA.normal.times(-1), a_to_b_normal);
+                const middle_normalb = Tree.grow_rmf_normal_raw(childB.pos, childB.tangent.times(-1), childB.normal.times(-1), b_to_a_normal);
 
                 {
                     const middle_node = new TreeNode(childA_opposite, middle_point, a_to_b_normal, middle_width, middle_normal, childA.branch_length);
@@ -176,7 +189,7 @@ class Tree {
         }
     }
 
-    remove_intersecting_nodes(rougness = 1) {
+    remove_intersecting_nodes(rougness = 1): void {
         const bifurcation_nodes = this.nodes.filter(node => node.children.length > 1);
 
         let removed_count = 0;
@@ -224,7 +237,7 @@ class Tree {
     // - currently uses the centripetal catmull rom splnie
     // - the argument means how many extra nodes
     //   we want to insert between 2 nodes
-    spline(mennyit) {
+    spline(mennyit: number): void {
 
         let allSplines = [];
 
@@ -285,7 +298,7 @@ class Tree {
         }
     }
 
-    good_point(pos) {
+    good_point(pos: Vec3): boolean {
         const a = CIRCLE_RADIUS*2;
         const b = CIRCLE_RADIUS*1;
         const c = CIRCLE_RADIUS*2;
@@ -296,7 +309,7 @@ class Tree {
 
     // keep only the attraction points which are further
     // away than a specific distance from all tree nodes
-    removeReachedAttractionPoints() {
+    removeReachedAttractionPoints(): void {
         this.attractionPoints = this.attractionPoints.filter((e) => {
             // search for the closest tree node's distance
             let closestDist = Number.MAX_SAFE_INTEGER;
@@ -322,10 +335,10 @@ class Tree {
     note: the binormal is omitted here because it can
           always be calculated from the tangent and the normal vectors
     */
-    static grow_rmf_normal(source, direction) {
+    static grow_rmf_normal(source: TreeNode, direction: Vec3): Vec3 {
         // inputs for frame 0
         const x0 = source.pos;
-        const t0 = source.dir;
+        const t0 = source.tangent;
         const r0 = source.normal;
         // const s0 = source.binormal();
 
@@ -334,8 +347,8 @@ class Tree {
         const t1 = direction; //.clone().normalize();
 
         // outputs for frame 1
-        let r1 = 0;
-        //let s1 = 0;
+        let r1: Vec3;
+        // let s1: Vec3;
 
         // magic
         const v1 = x1.minus(x0);
@@ -350,8 +363,8 @@ class Tree {
         return r1;
     }
 
-    static grow_rmf_normal_raw(pos, dir, normal, direction) {
-        return Tree.grow_rmf_normal({pos, dir, normal}, direction);
+    static grow_rmf_normal_raw(pos: Vec3, dir: Vec3, normal: Vec3, direction: Vec3): Vec3 {
+        return Tree.grow_rmf_normal({pos, tangent: dir, normal} as TreeNode, direction);
     }
 
     // grow_from_no(source, direction) {
@@ -367,7 +380,7 @@ class Tree {
     //         principal_normal);
     // }
 
-    growFrom(source, direction) {
+    growFrom(source: TreeNode, direction: Vec3): void {
         // frenet frame
         // https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas
         // const acceleration_vector = direction.minus(source.dir).normalize();
@@ -376,7 +389,7 @@ class Tree {
         // rmf frame
         const principal_normal = Tree.grow_rmf_normal(source, direction);
 
-        const angle = source.dir.dot(direction);
+        const angle = source.tangent.dot(direction);
 
         const newNode = new TreeNode(
             source,
@@ -397,39 +410,41 @@ class Tree {
         this.nodes.push(newNode);
     }
 
-    dist_to_node(pos, node) {
+    dist_to_node(pos: Vec3, node: TreeNode): number {
         return node.pos.minus(pos).length();
     }
 
-    add_ends() {
+    add_ends(): void {
         for (const node of this.nodes.filter(n => n.children.length === 0)) {
-            const ending_node_pos = node.pos.plus(node.dir.times(BRANCH_LENGTH*0.05));
-            const endingNode = new TreeNode(node, ending_node_pos, node.dir, node.width/2, node.normal, node.branch_length/2);
+            const ending_node_pos = node.pos.plus(node.tangent.times(BRANCH_LENGTH*0.05));
+            const endingNode = new TreeNode(node, ending_node_pos, node.tangent, node.width/2, node.normal, node.branch_length/2);
             node.children.push(endingNode);
             this.nodes.push(endingNode);
             this.ending_nodes.push(endingNode);
         }
     }
 
-    grow() {
+    grow(): void {
         if (this.attractionPoints.length === 0 || this.nodes.length >= MAX_TREE_SIZE) {
             return;
         }
 
-        let influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
+        let influencedNodes: {node: TreeNode, attrs: Vec3[]}[];
+        influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
 
         // find closest node to each attraction point
         let found = false;
         for (let apoint of this.attractionPoints) {
 
-            let closest = null;
+            let closest: TreeNode|null;
+            closest = null;
             let closestDist = Number.MAX_SAFE_INTEGER;
-            for (let treeNode of this.nodes) {
 
-                // only allow 2 children max
-                if (treeNode.children.length >= 2) {
-                    // continue;
-                }
+            for (let treeNode of this.nodes) {
+                // only allow 2 children
+                // if (treeNode.children.length >= 2) {
+                //     continue;
+                // }
 
                 let dist = this.dist_to_node(apoint, treeNode);
                 if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
@@ -449,7 +464,7 @@ class Tree {
         if (!found) {
             // no attraction at all, just grow up
             const lastNode = this.nodes[this.nodes.length - 1];
-            this.growFrom(lastNode, lastNode.dir);
+            this.growFrom(lastNode, lastNode.tangent);
 
         } else {
             // grow according to attractions
@@ -461,7 +476,7 @@ class Tree {
                 }
 
                 // attraction points whose closest node is the current one
-                let attrs = influencedNodes.find((n) => n.node === inflNode.node).attrs;
+                let attrs = influencedNodes.find((n) => n.node === inflNode.node)!.attrs;
 
                 // sum up all attrpoint-node directions
                 let sumVect = new Vec3(0, 0, 0);
@@ -471,7 +486,7 @@ class Tree {
                 }
                 sumVect.normalize();
                 // also include the previous direction
-                sumVect.add(inflNode.node.dir.times(PREVIOUS_DIR_POWER));
+                sumVect.add(inflNode.node.tangent.times(PREVIOUS_DIR_POWER));
                 sumVect.normalize();
 
                 // add node

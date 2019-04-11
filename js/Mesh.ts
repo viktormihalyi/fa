@@ -1,11 +1,13 @@
-"use strict";
 class Mesh {
-    constructor(geometry, material) {
+    public geometry: IGeometry;
+    public material: Material;
+
+    constructor(geometry: IGeometry, material: Material) {
         this.geometry = geometry;
         this.material = material;
     }
 
-    draw() {
+    draw(): void {
         this.material.commit();
         this.geometry.draw();
     }

@@ -5,17 +5,30 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     in mat4 modelM;
 
     uniform struct {
+        vec3 wLiPos;
+        vec3 wEye;
         mat4 viewProj;
     } camera;
 
-    uniform mat4 model;
 
     out vec2 uv;
     out vec3 normal;
 
+    out vec3 wLight;
+    out vec3 wView;
+    out vec3 wEye;
+    out vec3 worldPos;
+    out mat3 TBN;
+
     void main(void) {
-        gl_Position = vec4(vertexPosition, 1) * modelM * camera.viewProj;
+        vec4 wPos = vec4(vertexPosition, 1) * modelM;
+
         uv = vertexTexCoord;
-        normal = (vec4(vertexNormal, 0) * modelM).xyz;
+        normal   = (vec4(vertexNormal, 0) * modelM).xyz;
+        wLight   = (camera.wLiPos.xyz * wPos.w - wPos.xyz);
+        wView    = (camera.wEye * wPos.w - wPos.xyz);
+        worldPos = wPos.xyz;
+
+        gl_Position = wPos * camera.viewProj;
     }
 `;

@@ -1,5 +1,3 @@
-"use strict";
-/* exported keyboardMap */
 const keyboardMap = [
     "", // [0]
     "", // [1]

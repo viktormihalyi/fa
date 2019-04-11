@@ -69,7 +69,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 walnut_brown = vec3(0.36, 0.32, 0.28);
         vec3 dark_brown   = vec3(0.40, 0.26, 0.13);
 
-        m = mix(wood_brown, dark_brown, t);
+        m = mix(wood_brown, dark_brown, vec3(t, t, t));
         // m = texture(treeTexture, texCoord).rgb;
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
         fragmentColor = vec4(color, 1);

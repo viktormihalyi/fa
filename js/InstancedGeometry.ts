@@ -1,6 +1,13 @@
 "use strict";
-class InstancedGeometry {
-    constructor(gl, geometry, start_modelm_vertex_attrib, usesIndexArray) {
+class InstancedGeometry implements IGeometry {
+    public gl: WebGL2RenderingContext;
+    public geometry: IGeometry;
+    public instanceCount: number;
+    public modelMatrix: WebGLBuffer;
+    public usesIndexArray: boolean;
+
+
+    constructor(gl: WebGL2RenderingContext, geometry: IGeometry, start_modelm_vertex_attrib: number, usesIndexArray: boolean) {
         assert(geometry.vertexCount !== undefined, 'no vertexCount on geometry');
         assert(geometry.inputLayout !== undefined, 'no inputLayout on geometry');
 
@@ -16,7 +23,7 @@ class InstancedGeometry {
         //  instanced model matrix
         gl.bindVertexArray(this.geometry.inputLayout);
 
-        this.modelMatrix = gl.createBuffer();
+        this.modelMatrix = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.modelMatrix);
 
         const vec4size = 4*4;
@@ -37,7 +44,7 @@ class InstancedGeometry {
         gl.vertexAttribDivisor(start_idx+3, 1);
     }
 
-    setModelMatrices(listOfMatrices) {
+    setModelMatrices(listOfMatrices: Mat4[]) {
         const gl = this.gl;
 
         this.instanceCount = listOfMatrices.length;

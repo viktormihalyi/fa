@@ -11,7 +11,7 @@
  * <tr><td>+=</td><td>[add]{@link Vec3#add}</td></tr>
  * <tr><td>-=</td><td>[sub]{@link Vec3#sub}</td></tr>
  * <tr><td>*=</td><td>[mul]{@link Vec3#mul}</td></tr>
- * <tr><td>/=</td><td>[div]{@link Vec3#div}</td></tr> 
+ * <tr><td>/=</td><td>[div]{@link Vec3#div}</td></tr>
  * <tr><td>+</td><td>[plus]{@link Vec3#plus}</td></tr>
  * <tr><td>-</td><td>[minus]{@link Vec3#minus}</td></tr>
  * <tr><td>*</td><td>[times]{@link Vec3#times}</td></tr>
@@ -34,7 +34,7 @@ const Vec3 = function(u, v, s){
    * @name Vec3.prototype#storage
    * @description 3-element typed array for coordinate storage.
    * @type Float32Array
-   */  
+   */
   this.storage = new Float32Array([
     u && u.x || Number(u).valueOf() || 0,
     u && u.y || Number(v).valueOf() || 0,
@@ -44,7 +44,7 @@ const Vec3 = function(u, v, s){
 
 /**
  * @method clone
- * @memberof Vec3.prototype 
+ * @memberof Vec3.prototype
  * @description Creates a copy.
  * @return {Vec3} A new instance with identical contents.
  */
@@ -66,7 +66,7 @@ Object.defineProperty(Vec3.prototype, 'x', {
 
 /**
  * @name Vec3.prototype#y
- * @description Alias for storage[1]; 
+ * @description Alias for storage[1];
  * @type Number
  */
 Object.defineProperty(Vec3.prototype, 'y', {
@@ -76,7 +76,7 @@ Object.defineProperty(Vec3.prototype, 'y', {
 
 /**
  * @name Vec3.prototype#z
- * @description Alias for storage[2]; 
+ * @description Alias for storage[2];
  * @type Number
  */
 Object.defineProperty(Vec3.prototype, 'z', {
@@ -86,7 +86,7 @@ Object.defineProperty(Vec3.prototype, 'z', {
 
 /**
  * @method set
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>=</code>. Sets the coordinates from another vector, or number values. Without parameters, sets (0, 0, 0, 1).
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -97,13 +97,13 @@ Vec3.prototype.set = function(u, v, s) {
   this.storage[0] = u && u.x || Number(u).valueOf() || 0;
   this.storage[1] = u && u.y || Number(v).valueOf() || 0;
   this.storage[2] = u && u.z || Number(s).valueOf() || 0;
-  return this;  
+  return this;
 };
 
 /**
  * @method random
  * @memberof Vec3
- * @static 
+ * @static
  * @description Return a new {@link Vec3} with random values that to lie between two values, elementwise.
  * @param {Vec3 | Vec2 | Object | Number} [minVal=0] - Specifies the lower end of the random range. If a scalar is given, it applies to all channels.
  * @param {Vec3 | Vec2 | Object | Number} [maxVal=1] - Specifies the upper end of the random range. If a scalar is given, it applies to all channels.
@@ -119,14 +119,14 @@ Vec3.random = function(minVal, maxVal) {
   maxa = maxVal && ((maxVal.y-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   result.storage[1] = Math.random() * (maxa - mina) + mina;
   mina = minVal && minVal.z || Number(minVal).valueOf() || 0;
-  maxa = maxVal && ((maxVal.z-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  maxa = maxVal && ((maxVal.z-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   result.storage[2] = Math.random() * (maxa - mina) + mina;
   return result;
 };
 
 /**
  * @method setRandom
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fill the vector with random values that to lie between two further values, elementwise.
  * @param {Vec3 | Vec2 | Object | Number} [minVal=0] - Specifies the lower end of the random range. If a scalar is given, it applies to all channels.
  * @param {Vec3 | Vec2 | Object | Number} [maxVal=1] - Specifies the upper end of the random range. If a scalar is given, it applies to all channels.
@@ -134,15 +134,15 @@ Vec3.random = function(minVal, maxVal) {
  */
 Vec3.prototype.setRandom = function(minVal, maxVal) {
   let mina = minVal && minVal.x || Number(minVal).valueOf() || 0;
-  let maxa = maxVal && ((maxVal.x-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  let maxa = maxVal && ((maxVal.x-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   this.storage[0] = Math.random() * (maxa - mina) + mina;
   mina = minVal && minVal.y || Number(minVal).valueOf() || 0;
-  maxa = maxVal && ((maxVal.y-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  maxa = maxVal && ((maxVal.y-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   this.storage[1] = Math.random() * (maxa - mina) + mina;
   mina = minVal && minVal.z || Number(minVal).valueOf() || 0;
-  maxa = maxVal && ((maxVal.z-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  maxa = maxVal && ((maxVal.z-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   this.storage[2] = Math.random() * (maxa - mina) + mina;
-  return this;  
+  return this;
 };
 
 /**
@@ -165,7 +165,7 @@ Vec3.prototype.clamp = function(minVal, maxVal) {
   mina = minVal && minVal.z || Number(minVal).valueOf() || 0;
   if(this.storage[2] < mina){
     this.storage[2] = mina;
-  }  
+  }
   let maxa = maxVal && ((maxVal.x-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   if(this.storage[0] > maxa){
     this.storage[0] = maxa;
@@ -178,12 +178,12 @@ Vec3.prototype.clamp = function(minVal, maxVal) {
   if(this.storage[2] > maxa){
     this.storage[2] = maxa;
   }
-  return this;  
+  return this;
 };
 
 /**
  * @method setClamped
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Constrains a value to lie between two further values, elementwise, storing the result in this vector.
  * @param {Vec3} b - The value to constrain.
  * @param {Vec3 | Vec2 | Object | Number} [minVal=0] - Specifies the lower end of the range into which to constrain the elements. If a scalar is given, it applies to all channels.
@@ -192,7 +192,7 @@ Vec3.prototype.clamp = function(minVal, maxVal) {
  */
 Vec3.prototype.setClamped = function(b, minVal, maxVal) {
   let mina = minVal && minVal.x || Number(minVal).valueOf() || 0;
-  let maxa = maxVal && ((maxVal.x-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  let maxa = maxVal && ((maxVal.x-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   if(b.storage[0] < mina){
     this.storage[0] = mina;
   } else if(b.storage[0] > maxa){
@@ -201,7 +201,7 @@ Vec3.prototype.setClamped = function(b, minVal, maxVal) {
     this.storage[0] = b.storage[0];
   }
   mina = minVal && minVal.y || Number(minVal).valueOf() || 0;
-  maxa = maxVal && ((maxVal.y-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  maxa = maxVal && ((maxVal.y-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   if(b.storage[1] < mina){
     this.storage[1] = mina;
   } else if(b.storage[1] > maxa){
@@ -210,7 +210,7 @@ Vec3.prototype.setClamped = function(b, minVal, maxVal) {
     this.storage[1] = b.storage[1];
   }
   mina = minVal && minVal.z || Number(minVal).valueOf() || 0;
-  maxa = maxVal && ((maxVal.z-1) || (Number(maxVal).valueOf()-1) || 0) + 1;  
+  maxa = maxVal && ((maxVal.z-1) || (Number(maxVal).valueOf()-1) || 0) + 1;
   if(b.storage[2] < mina){
     this.storage[2] = mina;
   } else if(b.storage[2] > maxa){
@@ -223,7 +223,7 @@ Vec3.prototype.setClamped = function(b, minVal, maxVal) {
 
 /**
  * @method add
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>+=</code>. Adds another vector to this vector, overwriting the contents with the result.
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -234,16 +234,16 @@ Vec3.prototype.add = function(u, v, s) {
   this.storage[0] += u && u.x || Number(u).valueOf() || 0;
   this.storage[1] += u && u.y || Number(v).valueOf() || 0;
   this.storage[2] += u && u.z || Number(s).valueOf() || 0;
-  return this;  
+  return this;
 };
 
 /**
  * @method addScaled
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates <code>+= dt *</code>. Adds another vector, scaled by `dt`, to this vector, overwriting the contents with the result.
  * @param {Number} dt - Scaling factor.
  * @param {Vec3 | Object | Number} [u=0] - Any object (property x), or a numerical value.
- * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y. 
+ * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
  * @param {Number} [s=0] - Ignored if u.z is defined. Otherwise, the value for coordinate z.
   * @return {Vec3} this
  */
@@ -251,13 +251,13 @@ Vec3.prototype.addScaled = function(dt, u, v, s) {
   this.storage[0] += dt * (u && u.x || Number(u).valueOf() || 0);
   this.storage[1] += dt * (u && u.y || Number(v).valueOf() || 0);
   this.storage[2] += dt * (u && u.z || Number(s).valueOf() || 0);
-  return this;  
+  return this;
 };
 
 
 /**
  * @method plus
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>+</code>. Adds this vector and the parameter vector, and returns the result in a new instance.
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -275,22 +275,22 @@ Vec3.prototype.plus = function(u, v, s) {
 
 /**
  * @method setSum
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Adds the two argument vectors, storing the result in this vector.
  * @param {Vec3} b - Term 1.
- * @param {Vec3} c - Term 2. 
+ * @param {Vec3} c - Term 2.
  * @return {Vec3} this
  */
 Vec3.prototype.setSum = function(b, c) {
   this.storage[0] = b.storage[0] + c.storage[0];
   this.storage[1] = b.storage[1] + c.storage[1];
   this.storage[2] = b.storage[2] + c.storage[2];
-  return this;  
+  return this;
 };
 
 /**
  * @method sub
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>-=</code>. Subtracts another vector from this vector, overwriting the contents with the result.
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -301,12 +301,12 @@ Vec3.prototype.sub = function(u, v, s) {
   this.storage[0] -= u && u.x || Number(u).valueOf() || 0;
   this.storage[1] -= u && u.y || Number(v).valueOf() || 0;
   this.storage[2] -= u && u.z || Number(s).valueOf() || 0;
-  return this;  
+  return this;
 };
 
 /**
  * @method minus
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>-</code>. Subtracts the parameter vector from this vector, and returns the result in a new instance.
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -324,22 +324,22 @@ Vec3.prototype.minus = function(u, v, s) {
 
 /**
  * @method setDifference
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Subtracts the second argument vector from the first one, storing the result in this vector.
  * @param {Vec3} b - Minuend.
- * @param {Vec3} c - Subtrahend. 
+ * @param {Vec3} c - Subtrahend.
  * @return {Vec3} this
  */
 Vec3.prototype.setDifference = function(b, c) {
   this.storage[0] = b.storage[0] - c.storage[0];
   this.storage[1] = b.storage[1] - c.storage[1];
   this.storage[2] = b.storage[2] - c.storage[2];
-  return this;  
+  return this;
 };
 
 /**
  * @method mul
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>*=</code>. Multiplies this vector with another vector elementwise, or scalar, overwriting the contents with the result.
  * @param {Vec3 | Vec2 | Object | Number} [u=1] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=1] - Ignored if u.y is defined. Otherwise, the value for coordinate y. Defaults to the value of parameter u, if it is a number.
@@ -350,7 +350,7 @@ Vec3.prototype.mul = function(u, v, s) {
   this.storage[0] *= u && ((u.x - 1) || (Number(u).valueOf()-1) || 0) + 1;
   this.storage[1] *= u && ((u.y - 1) || (Number(v).valueOf()-1) || (Number(u).valueOf()-1) || 0) + 1;
   this.storage[2] *= u && ((u.z - 1) || (Number(s).valueOf()-1) || (Number(u).valueOf()-1) || 0) + 1;
-  return this;  
+  return this;
 };
 
 /**
@@ -401,22 +401,22 @@ Vec3.prototype.xyz0times = function(m) {
 
 /**
  * @method setProduct
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Multiplies, elementwise, the two argument vectors, storing the result in this vector.
  * @param {Vec3} b - Factor 1.
- * @param {Vec3} c - Factor 2. 
+ * @param {Vec3} c - Factor 2.
  * @return {Vec3} this
  */
 Vec3.prototype.setProduct = function(b, c) {
   this.storage[0] = b.storage[0] * c.storage[0];
   this.storage[1] = b.storage[1] * c.storage[1];
   this.storage[2] = b.storage[2] * c.storage[2];
-  return this;  
+  return this;
 };
 
 /**
  * @method div
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator <code>/=</code>. Divides, elementwise, this vector with another vector, or scalar, overwriting the contents with the result.
  * @param {Vec3 | Vec2 | Object | Number} [u=1] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=1] - Ignored if u.y is defined. Otherwise, the value for coordinate y. Defaults to the value of parameter u, if it is a number.
@@ -427,7 +427,7 @@ Vec3.prototype.div = function(u, v, s) {
   this.storage[0] /= u && ((u.x - 1) || (Number(u).valueOf()-1) || 0) + 1;
   this.storage[1] /= u && ((u.y - 1) || (Number(v).valueOf()-1) || (Number(u).valueOf()-1) || 0) + 1;
   this.storage[2] /= u && ((u.z - 1) || (Number(s).valueOf()-1) || (Number(u).valueOf()-1) || 0) + 1;
-  return this;  
+  return this;
 };
 
 /**
@@ -450,37 +450,37 @@ Vec3.prototype.over = function(u, v, s) {
 
 /**
  * @method setQuotient
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Divides, elementwise, the two argument vectors, storing the result in this vector.
  * @param {Vec3} b - Dividend.
- * @param {Vec3} c - Divisor. 
+ * @param {Vec3} c - Divisor.
  * @return {Vec3} this
  */
 Vec3.prototype.setQuotient = function(b, c) {
   this.storage[0] = b.storage[0] / c.storage[0];
   this.storage[1] = b.storage[1] / c.storage[1];
   this.storage[2] = b.storage[2] / c.storage[2];
-  return this;  
+  return this;
 };
 
 /**
  * @method setScaled
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Scales the vector by a scalar.
  * @param {Vec3} a - Vector to scale.
- * @param {Number} s - Scale factor. 
+ * @param {Number} s - Scale factor.
  * @return {Vec3} this
  */
 Vec3.prototype.setScaled = function(a, s){
   this.storage[0] = a.x * s;
   this.storage[1] = a.y * s;
   this.storage[2] = a.z * s;
-  return this;  
+  return this;
 };
 
 /**
  * @method setScaledByInverse
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Scales the vector by the reciprocal of scalar.
  * @param {Vec3} a - Vector to scale.
  * @param {Number} s - Scale factor inverse.
@@ -489,13 +489,13 @@ Vec3.prototype.setScaled = function(a, s){
 Vec3.prototype.setScaledByInverse = function(a, s){
   this.storage[0] = a.x / s;
   this.storage[1] = a.y / s;
-  this.storage[2] = a.z / s;  
-  return this;  
+  this.storage[2] = a.z / s;
+  return this;
 };
 
 /**
  * @method length2
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Computes the length squared.
  * @return {Number} x*x + y*y + z*z + w*w
  */
@@ -505,7 +505,7 @@ Vec3.prototype.length2 = function() {
 
 /**
  * @method length
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Computes the vector length.
  * @return {Number}
  */
@@ -515,7 +515,7 @@ Vec3.prototype.length = function() {
 
 /**
  * @method normalize
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Scales the vector by the inverse of its length, overwriting the contents with the result.
  * @return {Vec3} this
  */
@@ -523,13 +523,13 @@ Vec3.prototype.normalize = function() {
   const l = this.length();
   this.storage[0] /= l;
   this.storage[1] /= l;
-  this.storage[2] /= l;  
+  this.storage[2] /= l;
   return this;
 };
 
 /**
  * @method direction
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Scales the vector by the inverse of its length, and returns the result in a new instance.
  * @return {Vec3} A unit length vector with the same direction as this.
  */
@@ -545,7 +545,7 @@ Vec3.prototype.direction = function() {
 
 /**
  * @method setNormalized
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Scales the argmument vector by the inverse of its length, storing the result in this vector.
  * @param b {Vec3} - The vector to normalize.
  * @return {Vec3} this
@@ -560,7 +560,7 @@ Vec3.prototype.setNormalized = function(b) {
 
 /**
  * @method dot
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Computes the dot product with another vector.
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -575,7 +575,7 @@ Vec3.prototype.dot = function(u, v, s) {
 
 /**
  * @method cross
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Simulates operator %times;. Computes the cross product of the vectors, returning the result in a new instance.
  * @param {Vec3 | Vec2 | Object | Number} [u=0] - Any object (properties x, y, z are interpreted as coordinates, if given), or a numerical value for coordinate x.
  * @param {Number} [v=0] - Ignored if u.y is defined. Otherwise, the value for coordinate y.
@@ -596,7 +596,7 @@ Vec3.prototype.cross = function(u, v, s) {
 
 /**
  * @method setVectorProduct
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Fast. Computes the vector product (cross product) of the two argument vectors, storing the result in this vector.
  * @param {Vec3} b - Left operand.
  * @param {Vec3} c - Right operand.
@@ -620,15 +620,15 @@ Vec3.prototype.xyz1mul = function(m) {
   const x = this.storage[0];
   const y = this.storage[1];
   const z = this.storage[2];
-  const w = 
+  const w =
     x * m.storage[12] +
     y * m.storage[13] +
-    z * m.storage[14] +    
+    z * m.storage[14] +
         m.storage[15] ;
   this.storage[0] = (
     x * m.storage[ 0] +
     y * m.storage[ 1] +
-    z * m.storage[ 2] +    
+    z * m.storage[ 2] +
         m.storage[ 3] ) / w;
   this.storage[1] = (
     x * m.storage[ 4] +
@@ -655,15 +655,15 @@ Vec3.prototype.setxyz1Transformed = function(v, m) {
   const x = v.storage[0];
   const y = v.storage[1];
   const z = v.storage[2];
-  const w = 
+  const w =
     x * m.storage[12] +
     y * m.storage[13] +
-    z * m.storage[14] +    
+    z * m.storage[14] +
         m.storage[15] ;
   this.storage[0] = (
     x * m.storage[ 0] +
     y * m.storage[ 1] +
-    z * m.storage[ 2] +    
+    z * m.storage[ 2] +
         m.storage[ 3] ) / w;
   this.storage[1] = (
     x * m.storage[ 4] +
@@ -733,7 +733,7 @@ Vec3.prototype.xyz0mul = function(m) {
 
 /**
  * @method commit
- * @memberof Vec3.prototype  
+ * @memberof Vec3.prototype
  * @description Sets the value of the vector to a WebGL vec3 uniform variable.
  * @param {WebGLRenderingContext} gl - rendering context
  * @param {WebGLUniformLocation} uniformLocation - location of the uniform variable in the currently used WebGL program
