@@ -1,0 +1,3 @@
+[submodule "WebGLMath"]
+	path = WebGLMath
+	url = https://github.com/szecsi/WebGLMath.git

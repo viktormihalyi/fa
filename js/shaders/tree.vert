@@ -22,7 +22,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     out vec3 worldPos;
     out mat3 TBN;
 
-    // #define normal
+    #define normal
 
     void main(void) {
         wEye = camera.wEye;

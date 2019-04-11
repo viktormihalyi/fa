@@ -40,8 +40,8 @@ class Scene {
         const treeGeometry = new TreeGeometry(gl);
         treeGeometry.setPoints(tree);
         const treeMaterial = new Material(gl, treeShader);
-        treeMaterial['treeTexture'].set(new Texture2D(gl, `./pine.png`));
-        treeMaterial['treeTextureNorm'].set(new Texture2D(gl, `./pine_normal.png`));
+        treeMaterial.treeTexture.set(new Texture2D(gl, `./bark.jpg`));
+        treeMaterial.treeTextureNorm.set(new Texture2D(gl, `./bark_normal.jpg`));
         const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial));
 
 
@@ -53,9 +53,9 @@ class Scene {
         ]);
 
         const leafMaterial = new Material(gl, leavesShader);
-        leafMaterial['leaves'].set(new Texture2D(gl, `./leaf01_color.png`));
-        leafMaterial['leaves_alpha'].set(new Texture2D(gl, `./leaf01_alpha.png`));
-        leafMaterial['leaves_translucency'].set(new Texture2D(gl, `./leaf01_translucency.png`));
+        leafMaterial.leaves.set(new Texture2D(gl, `./leaf01_color.png`));
+        leafMaterial.leaves_alpha.set(new Texture2D(gl, `./leaf01_alpha.png`));
+        leafMaterial.leaves_translucency.set(new Texture2D(gl, `./leaf01_translucency.png`));
 
         const quadGeometry = new QuadGeometry(gl);
         const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);

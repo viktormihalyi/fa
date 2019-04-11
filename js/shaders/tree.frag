@@ -50,7 +50,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 nsc3 = vec3(1, 0.01, 1);
 
         // uncomment to 'disable' normal map
-        N = normalize(wNormal + 0.1 * (snoiseGrad(worldPos3*nsc3, 16)*0.4 + snoiseGrad(worldPos3*1.5*nsc3, 16)*0.2 + snoiseGrad(worldPos3*0.5*nsc3, 10)*0.2));
+        // N = normalize(wNormal + 0.0 * (snoiseGrad(worldPos3*nsc3, 16)*0.4 + snoiseGrad(worldPos3*1.5*nsc3, 16)*0.2 + snoiseGrad(worldPos3*0.5*nsc3, 10)*0.2));
 
         float t = snoise(worldPos3*nsc3, 16)*0.4 + snoise(worldPos3*1.5*nsc3, 16)*0.2 + snoise(worldPos3*0.5*nsc3, 10)*0.2;
 
@@ -70,7 +70,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 dark_brown   = vec3(0.40, 0.26, 0.13);
 
         m = mix(wood_brown, dark_brown, vec3(t, t, t));
-        // m = texture(treeTexture, texCoord).rgb;
+        m = texture(treeTexture, texCoord).rgb;
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
         fragmentColor = vec4(color, 1);
 
