@@ -4,8 +4,7 @@ interface IAttribLocation {
 }
 
 class Program {
-    public static from(gl: WebGL2RenderingContext, vertexShaderFile: string,
-                       fragmentShaderFile: string, attribLocations: IAttribLocation[]) {
+    public static from(gl: WebGL2RenderingContext, vertexShaderFile: string, fragmentShaderFile: string, attribLocations: IAttribLocation[]) {
 
         return new Program(gl,
             new Shader(gl, gl.VERTEX_SHADER, vertexShaderFile),
@@ -16,8 +15,7 @@ class Program {
     public gl: WebGL2RenderingContext;
     public glProgram: WebGLProgram;
 
-    constructor(gl: WebGL2RenderingContext,
-                vertexShader: Shader, fragmentShader: Shader, attribLocations: IAttribLocation[]) {
+    constructor(gl: WebGL2RenderingContext, vertexShader: Shader, fragmentShader: Shader, attribLocations: IAttribLocation[]) {
 
         this.gl = gl;
         this.glProgram = gl.createProgram()!;

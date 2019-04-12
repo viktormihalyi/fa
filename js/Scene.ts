@@ -1,5 +1,3 @@
-"use strict";
-
 const BG_COLOR = new Vec3(240,248,255).over(255);
 
 class Scene {
