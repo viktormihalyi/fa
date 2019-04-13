@@ -1,4 +1,3 @@
-"use strict";
 class Material {
     public gl: WebGL2RenderingContext;
     public program: any;

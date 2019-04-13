@@ -37,7 +37,7 @@ function pv(vec: Vec3): string {
     return `(${round_to_tenths(vec.x)}, ${round_to_tenths(vec.y)}, ${round_to_tenths(vec.z)})`
 }
 
-function project_to_plane(A: Vec3, plane_normal: Vec3): Vec3 {
+function projectVectorToPlane(A: Vec3, plane_normal: Vec3): Vec3 {
     return plane_normal.cross(A.cross(plane_normal));
 }
 
@@ -156,10 +156,10 @@ function normalVectorForTriangle(node1: Vec3, node2: Vec3, node3: Vec3): Vec3 {
 }
 
 // tangent, normal, binormals must be normalized
-function createOrientationMatrix(tangent: Vec3, normal: Vec3, binormal: Vec3): Mat4 {
+function createOrientationMatrix(tangent: Vec3, normal: Vec3, binormal?: Vec3): Mat4 {
     const t = tangent;
-    const b = binormal;
     const n = normal;
+    const b = binormal || t.cross(n).normalize();
     // wtf
     return new Mat4(
         b.x, b.y, b.z, 0,

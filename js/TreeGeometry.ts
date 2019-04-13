@@ -1,7 +1,6 @@
-
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 4;
+const CIRCLE_RES = 6;
 const HALF_CIRCLE_RES = CIRCLE_RES / 2;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
@@ -32,6 +31,22 @@ function getCirclePoints(pos: Vec3, normal: Vec3, binormal: Vec3, width: number)
 
 function getCirclePointsForNode(node: TreeNode): Vec3[] {
     return getCirclePoints(node.pos, node.normal, node.binormal(), node.width);
+}
+
+// cylinder res should be even, otherwise there is no opposite node, bla bla bla
+function u_texcoord_for_cylinder(cylinder_resolution: number, t: number): number {
+    const half_cylinder_res = cylinder_resolution/2;
+    if (t < half_cylinder_res) {
+        return t/half_cylinder_res;
+    } else if (t == half_cylinder_res) {
+        return 1;
+    } else /* if (t > half_cylinder_res) */ {
+        return (cylinder_resolution-t)/half_cylinder_res;
+    }
+}
+
+function u_texcoords_for_cylinder(n: number): number[] {
+    return new Array(n).fill(0).map((_, index) => u_texcoord_for_cylinder(6, index));
 }
 
 
@@ -102,16 +117,6 @@ class TreeGeometry implements IGeometry {
 
         const gl = this.gl;
 
-        // set v coordinates for textures
-        function recursive_set_v(root: TreeNode, n: number) {
-            root.v = n;
-            for (const child of root.children) {
-                recursive_set_v(child, n + 1);
-            }
-        }
-        recursive_set_v(tree.nodes[0], 0);
-
-
         const raw_vertex_data = [];
 
         for (const node of tree.nodes) {
@@ -119,6 +124,8 @@ class TreeGeometry implements IGeometry {
                 // connect node to child
                 const from = getCirclePointsForNode(node);
                 const to  = getCirclePointsForNode(child);
+
+                const texture_coordinates: number[] = u_texcoords_for_cylinder(CIRCLE_RES);
 
                 for (let i = 0; i < CIRCLE_RES; i++) {
                     // triangle 1
@@ -133,46 +140,63 @@ class TreeGeometry implements IGeometry {
 
                     const nextidx = (i+1) % CIRCLE_RES;
 
-                    let u: number;
-                    if (i < HALF_CIRCLE_RES) {
-                        u = i/HALF_CIRCLE_RES;
-                    } else {
-                        u = 1-(i-HALF_CIRCLE_RES)/HALF_CIRCLE_RES;
-                    }
+                    const u      = texture_coordinates[i];
+                    const u_next = texture_coordinates[nextidx];
 
                     // triangle 1
-                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v)));
-                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.v)));
-                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v)));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth)));
+                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth)));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth)));
 
                     // triangle 2
-                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.v)));
-                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u, node.v)));
-                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u, child.v)));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth)));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth)));
+                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u_next, child.depth)));
                 }
             }
         }
+
+        // ending circle
+        for (const node of tree.nodes.filter(n => n.children.length === 0)) {
+            const node_points = getCirclePointsForNode(node);
+            for (let i = 0; i < CIRCLE_RES; i++) {
+                const nextidx = (i+1) % CIRCLE_RES;
+                raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1)));
+                raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1)));
+                raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1)));
+            }
+        }
+
+
         // this.vertex_ccount = raw_vertex_data.length;
 
         const unique_vertices: VertexData[] = [];
         const index_buffer: number[] = [];
 
         const MAX_DIST_DIFF = 0.1;
+        console.log(`CIRLCE_RES = ${CIRCLE_RES}`);
         console.log(`vertices count: ${raw_vertex_data.length}, running vertex indexer...`);
-        // const tmp = new Vec3();
-        let i = 0;
 
+        // calculate distance here
+        const tmp = new Vec3();
+
+        // track progress
+        let i = 0;
+        let last_perc = -1;
+
+        const index_start_time = new Date().getTime();
         // index vertices
         for (const vd of raw_vertex_data) {
-            if (i % 2000 === 0) console.log(`${Math.round(i / raw_vertex_data.length * 100)}%`);
-            i++;
+            const done_percentage = Math.round(i++ / raw_vertex_data.length * 100);
+            if (last_perc != done_percentage && done_percentage % 10 === 0) {
+                console.log(`${done_percentage}%`);
+                last_perc = done_percentage;
+            }
 
             let is_new_vertex = true;
 
-            for (let i = 0; i < unique_vertices.length; i++) {
-                const vd2 = unique_vertices[i];
-                // if (tmp.setDifference(vd.position.minus(vd2.position)).length2() < MAX_DIST_DIFF) {
-                if (vd.position.minus(vd2.position).length2() < MAX_DIST_DIFF) {
+            for (let i = unique_vertices.length - 1; i >= 0; i--) {
+                if (tmp.setDifference(vd.position, unique_vertices[i].position).length2() < MAX_DIST_DIFF) {
                     index_buffer.push(i);
                     is_new_vertex = false;
                     break;
@@ -183,10 +207,13 @@ class TreeGeometry implements IGeometry {
                 index_buffer.push(unique_vertices.length-1);
             }
         }
-        console.log(`done, unique vertex count: ${unique_vertices.length}, index buffer size: ${index_buffer.length}`);
+        const index_end_time = new Date().getTime();
+        console.log(`done (took ${index_end_time - index_start_time} ms), unique vertex count: ${unique_vertices.length}, index buffer size: ${index_buffer.length}`);
 
         // this.vertex_ccount = unique_vertices.length;
         this.index_count = index_buffer.length;
+
+        console.log('normals, tangents, bitangents...');
 
         // average normals, find tangents and bitangents
         for (let i = 0; i < unique_vertices.length; i++) {
@@ -251,6 +278,7 @@ class TreeGeometry implements IGeometry {
             unique_vertices[i].tangent = avgTangent;
             unique_vertices[i].bitangent = avgBitangent;
         }
+        console.log('done');
 
         gl.bindVertexArray(this.vao);
 

@@ -1,0 +1,24 @@
+{
+  "name": "onlab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@types/webgl2": "0.0.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/viktormihalyi/onlab.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/viktormihalyi/onlab/issues"
+  },
+  "homepage": "https://gitlab.com/viktormihalyi/onlab#readme"
+}

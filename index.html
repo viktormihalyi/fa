@@ -13,16 +13,12 @@
         <canvas id="canvas"></canvas>
         <div id="overlay">
             <div id="status"></div>
-<!--
-            <br>
-            <input value='3' id='sn' style='width:30px;'>
-            <input type='button' value='refine' onclick='app.scene.tree.spline(Number(document.querySelector("#sn").value));'>
-            <br>
-            <input value='1.1' id='im' style='width:30px;'>
-            <input type='button' value='remove' onclick='app.scene.tree.remove_intersecting_nodes(Number(document.querySelector("#im").value));'> -->
+            <input type="range" min="0.5" max="1.5" value="1" step="0.05" class="slider"
+                oninput="app.scene.treem.mossyness.set(this.value);console.log(this.value);">
         </div>
     </div>
 
+    <!-- WebGLMath -->
     <script src="WebGLMath/js/Mat4.js"></script>
     <script src="WebGLMath/js/Vec1.js"></script>
     <script src="WebGLMath/js/Vec2.js"></script>
@@ -38,10 +34,8 @@
     <script src="WebGLMath/js/SamplerCube.js"></script>
     <script src="WebGLMath/js/UniformReflection.js"></script>
 
-    <script src=//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js></script>
-
+    <!-- project files -->
     <script src="js/util.js"></script>
-    <!-- <script src="js/BezierSurface.js"></script> -->
     <script src="js/App.js"></script>
     <script src="js/keycodes.js"></script>
     <script src="js/Program.js"></script>
@@ -49,8 +43,6 @@
     <script src="js/SphereGeometry.js"></script>
     <script src="js/TreeGeometry.js"></script>
     <script src="js/FrenetGeometry.js"></script>
-    <!-- <script src="js/BezierSurfaceGeometry.js"></script> -->
-    <!-- <script src="js/MarchingCubesGeometry.js"></script> -->
     <script src="js/Scene.js"></script>
     <script src="js/PerspectiveCamera.js"></script>
     <script src="js/Tree.js"></script>
@@ -63,6 +55,7 @@
     <script src="js/VertexData.js"></script>
     <script src="js/TwigGeometry.js"></script>
 
+    <!-- shaders -->
     <script src="js/shaders/tree.vert"></script>
     <script src="js/shaders/tree.frag"></script>
 
@@ -77,11 +70,6 @@
 
     <script src="js/shaders/twig.vert"></script>
     <script src="js/shaders/twig.frag"></script>
-
-    <script>
-
-    </script>
-
 </body>
 
 </html>

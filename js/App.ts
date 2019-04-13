@@ -1,4 +1,3 @@
-"use strict";
 class App {
     // serves as a registry for textures or models being loaded
     public static pendingResources: any = {};

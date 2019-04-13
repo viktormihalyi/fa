@@ -1,5 +1,5 @@
 class PerspectiveCamera {
-    public static worldUp: Vec3 = new Vec3(0, 1, 0);
+    public static readonly worldUp: Vec3 = new Vec3(0, 1, 0);
 
     public position: Vec3;
     public ahead: Vec3;
@@ -37,8 +37,8 @@ class PerspectiveCamera {
 
         this.fov = radians(90);
         this.aspect = 1.0;
-        this.nearPlane = 1.0;
-        this.farPlane = 10000.0;
+        this.nearPlane = 0.5;
+        this.farPlane = 5000;
 
         this.speed = 150;
         this.dragSpeed = 0.003;
@@ -103,7 +103,7 @@ class PerspectiveCamera {
             this.up.setVectorProduct(this.right, this.ahead);
         }
         if (keysPressed.SHIFT) {
-            this.speed /= 6;
+            this.speed /= 10;
         }
         if (keysPressed.W) {
             this.position.addScaled(this.speed * dt, this.ahead);
@@ -124,7 +124,7 @@ class PerspectiveCamera {
             this.position.addScaled(-this.speed * dt, PerspectiveCamera.worldUp);
         }
         if (keysPressed.SHIFT) {
-            this.speed *= 6;
+            this.speed *= 10;
         }
         this.updateViewMatrix();
         this.updateRayDirMatrix();

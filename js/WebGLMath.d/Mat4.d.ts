@@ -18,8 +18,12 @@ declare class Mat4 {
         m20: number, m21: number, m22: number, m23: number,
         m30: number, m31: number, m32: number, m33: number): this;
 
-    mul(m: Mat4): this;
     premul(m: Mat4): this;
+    mul(m: Mat4): this;
+
+    scale(u: Vec3): this;
+    scale(u: number, v: number, s: number): this;
+    scale(t: number): this;
 
     rotate(angle: number, u?: Vec3): this;
     rotate(angle: number, u?: number, v?: number, s?: number): this;
@@ -27,10 +31,9 @@ declare class Mat4 {
     translate(u: Vec3): this;
     translate(u: number, v: number, s: number): this;
 
-    scale(u: Vec3): this;
-    scale(u: number, v: number, s: number): this;
-    scale(t: number): this;
-
     transpose(): this;
+
     invert(): this;
+
+    commit(gl: WebGL2RenderingContext, uniformLocation: WebGLUniformLocation): void;
 }

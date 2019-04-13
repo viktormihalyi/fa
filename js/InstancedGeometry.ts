@@ -1,4 +1,3 @@
-"use strict";
 class InstancedGeometry implements IGeometry {
     public gl: WebGL2RenderingContext;
     public geometry: IGeometry;

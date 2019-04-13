@@ -1,4 +1,3 @@
-"use strict";
 class VertexData {
     public position: Vec3;
     public normal: Vec3;

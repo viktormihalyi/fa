@@ -1,5 +1,3 @@
-// Math.seedrandom(7);
-
 // number of attraction points to generate
 const ATTRACTION_POINT_COUNT = 250*6;
 
@@ -8,10 +6,10 @@ const CIRCLE_CENTER = new Vec3(0, 250, 0);
 const CIRCLE_RADIUS = 120;
 
 // space colonization algorithm constants
-const INFL_MIN_DIST = 12;
+const INFL_MIN_DIST = 12/3;
 const INFL_MAX_DIST = 150;
 const BRANCH_LENGTH = 30;
-const BRANCH_LENGTH_SCALE = 0.97;
+const BRANCH_LENGTH_SCALE = 0.99;
 
 // starting tree node values
 const TREE_INITIAL_POS = new Vec3(0, 0, 0);
@@ -20,7 +18,7 @@ const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
 const TREE_STARTING_WIDTH = 12;
 
 // stop grwoing after reaching this many tree nodes
-const MAX_TREE_SIZE = 250;
+const MAX_TREE_SIZE = 250*2;
 
 // how much the previous growing direction should affect the next node
 // 0 - not taken into consideration
@@ -38,9 +36,9 @@ class TreeNode {
     public normal: Vec3;
     public width: number;
     public branch_length: number;
-    public v: number;
+    public depth: number;
 
-    constructor(parent: TreeNode|null, pos: Vec3, dir: Vec3, width: number, normal: Vec3, br = 0) {
+    constructor(parent: TreeNode | null, pos: Vec3, dir: Vec3, width: number, normal: Vec3, br = 0) {
         this.parent = parent;
         this.pos = pos;
         this.tangent = dir.clone().normalize();
@@ -48,7 +46,7 @@ class TreeNode {
         this.children = [];
         this.normal = normal.clone().normalize();
         this.branch_length = br;
-        this.v = 0;
+        this.depth = 0;
     }
 
     binormal(): Vec3 {
@@ -114,6 +112,27 @@ class Tree {
                 this.attractionPoints.push(rndpoint);
             }
         }
+    }
+
+    public growFully() {
+        for (let i = 0; i < 100; i++) {
+            this.grow();
+        }
+        this.spline(1);
+        // this.remove_intersecting_nodes(0.8);
+        this.add_ends();
+        this.calculate_depth();
+    }
+
+    calculate_depth(): void {
+        // set v coordinates for textures
+        function recursive_set_v(root: TreeNode, n: number) {
+            root.depth = n;
+            for (const child of root.children) {
+                recursive_set_v(child, n + 1);
+            }
+        }
+        recursive_set_v(this.nodes[0], 0);
     }
 
     // return a new node
@@ -455,8 +474,9 @@ class Tree {
 
             if (closest !== null) {
                 found = true;
-                let t = influencedNodes.find((n) => n.node === closest);
-                t.attrs.push(apoint);
+                let node_closest_to_attr = influencedNodes.find((n) => n.node === closest)!;
+                assert(node_closest_to_attr !== null, '');
+                node_closest_to_attr.attrs.push(apoint);
             }
         }
 

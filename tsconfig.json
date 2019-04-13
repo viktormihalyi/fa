@@ -2,8 +2,7 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "es5",
-        "jsx": "preserve",
-        "watch": true,
+        "strict": true,
         "lib": [
             "esnext",
             "dom"

@@ -3,6 +3,12 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
     uniform sampler2D treeTexture;
     uniform sampler2D treeTextureNorm;
+    uniform sampler2D treeTextureHeight;
+    uniform sampler2D mossTexture;
+    uniform sampler2D mossTextureNorm;
+    uniform sampler2D mossTextureHeight;
+
+    uniform float mossyness;
 
     in vec3 worldPos;
     in vec3 wNormal;
@@ -41,9 +47,20 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 kd = vec3(1.0, 1.0, 1.0);
         vec3 ks = vec3(1.0, 1.0, 1.0);
 
+
+        float bark_height = texture(treeTextureHeight, texCoord).r;
+        float mossy_rock_height = texture(mossTextureHeight, texCoord).r * mossyness;
+
         vec3 N;
-        N = texture(treeTextureNorm, texCoord).rgb;
-        N = normalize(N * 2.0 - 1.0);
+        vec3 m;
+        if (bark_height > mossy_rock_height) {
+            m = texture(treeTexture, texCoord).rgb;
+            N = texture(treeTextureNorm, texCoord).rgb * 2.0 - 1.0;
+        } else {
+            m = texture(mossTexture, texCoord).rgb;
+            N = texture(mossTextureNorm, texCoord).rgb * 2.0 - 1.0;
+        }
+
 
         vec3 worldPos3 = worldPos * 30.0;
 
@@ -60,18 +77,9 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         float nv = max(dot(N, V), 0.0);
         float nh = max(dot(N, H), 0.0);
 
-        vec3 m;
-
-        vec3 desert_brown = vec3(0.93, 0.79, 0.69);
-        vec3 wood_brown   = vec3(0.76, 0.60, 0.42);
-        vec3 walnut_brown = vec3(0.36, 0.32, 0.28);
-        vec3 dark_brown   = vec3(0.40, 0.26, 0.13);
-
-        m = mix(wood_brown, dark_brown, vec3(t, t, t));
-        m = texture(treeTexture, texCoord).rgb;
-        vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
+        vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.75);
         fragmentColor = vec4(color, 1);
-        fragmentColor = vec4(smoothstep(vec3(t), vec3(t)/2.0, vec3(0.4)), 1);
+        // fragmentColor = vec4(smoothstep(vec3(t), vec3(t)/2.0, vec3(0.4)), 1);
 
         // fragmentColor = vec4(m, 1);
         // fragmentColor = texture(treeTexture, texCoord);

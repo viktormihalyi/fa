@@ -1,4 +1,3 @@
-
 class Shader {
     public static sourcePathURL: string = (<HTMLScriptElement>document.currentScript).src.split('Shader.js')[0] + 'shaders/';
     public static source: any = {};

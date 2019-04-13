@@ -15,3 +15,5 @@ declare class UniformReflection {
     static sampler2D(arraySize: number, samplerIndex: any): any;
     static samplerCube(arraySize: number, samplerIndex: any): any;
 }
+
+declare const Uniforms: any;

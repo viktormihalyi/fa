@@ -1,5 +1,3 @@
-"use strict";
-
 const VEC_LENGTH = 5;
 
 const TANGENT_COLOR  = new Vec3(0, 0, 1); // blue
