@@ -63,7 +63,7 @@ class Scene {
 
         const leafMaterial = new Material(gl, leavesShader);
         leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
-        leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha2.jpg`));
+        leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha.jpg`));
         leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
 
         const quadGeometry = new QuadGeometry(gl);
