@@ -2,17 +2,17 @@
 
 ## building
 
-download [WebGLMath](https://github.com/szecsi/WebGLMath) as a submodule:
+download [webglmath](https://github.com/szecsi/WebGLMath) as a submodule:
 ```bash
 git submodule update --recursive --remote
 ```
 
-you will need to have typescript downloaded:
+you will need to have typescript installed:
 ```bash
-npm install -g  typescript
+npm install -g typescript
 ```
 
-compile typescript:
+compile to javascript:
 ```bash
 tsc
 ```

@@ -10,6 +10,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
     uniform float mossyness;
 
+    in vec3 modelPosition;
     in vec3 worldPos;
     in vec3 wNormal;
     in vec3 wView;
@@ -21,20 +22,20 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
     out vec4 fragmentColor;
 
-    float snoise(vec3 r, int it) {
+    float snoise(vec3 r) {
         vec3 s = vec3(7502, 22777, 4767);
         float f = 0.0;
-        for(int i = 0; i < it; i++) {
+        for(int i = 0; i < 16; i++) {
             f += sin(dot(s - vec3(32768, 32768, 32768), r) / 65536.0);
             s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
         }
         return f / 32.0 + 0.5;
     }
 
-    vec3 snoiseGrad(vec3 r, int it) {
+    vec3 snoiseGrad(vec3 r) {
         vec3 s = vec3(7502, 22777, 4767);
         vec3 f = vec3(0.0, 0.0, 0.0);
-        for(int i=0; i < it; i++) {
+        for(int i=0; i < 16; i++) {
             f += cos( dot(s - vec3(32768, 32768, 32768), r) / 65536.0) * s;
             s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
         }
@@ -47,13 +48,22 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 kd = vec3(1.0, 1.0, 1.0);
         vec3 ks = vec3(1.0, 1.0, 1.0);
 
+        float t = snoise(modelPosition);
 
         float bark_height = texture(treeTextureHeight, texCoord).r;
-        float mossy_rock_height = texture(mossTextureHeight, texCoord).r * mossyness;
+        float mossy_rock_height = texture(mossTextureHeight, texCoord).r + t * mossyness;
+
 
         vec3 N;
         vec3 m;
-        if (bark_height > mossy_rock_height) {
+        float height_diff = bark_height - mossy_rock_height;
+
+        float interpolate_at = 0.05;
+        if (height_diff > 0.0 && height_diff < interpolate_at) {
+            float interpolated = 1.0 - abs(height_diff) / interpolate_at;
+            m = mix(texture(treeTexture, texCoord).rgb, texture(mossTexture, texCoord).rgb, interpolated);
+            N = mix(texture(treeTextureNorm, texCoord).rgb, texture(mossTextureNorm, texCoord).rgb, interpolated) * 2.0 - 1.0;
+        } else if (height_diff > 0.0) {
             m = texture(treeTexture, texCoord).rgb;
             N = texture(treeTextureNorm, texCoord).rgb * 2.0 - 1.0;
         } else {
@@ -61,13 +71,9 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
             N = texture(mossTextureNorm, texCoord).rgb * 2.0 - 1.0;
         }
 
-
-        vec3 worldPos3 = worldPos * 30.0;
-
         // uncomment to 'disable' normal map
-        // N = normalize(wNormal + 0.0 * (snoiseGrad(worldPos3*nsc3, 16)*0.4 + snoiseGrad(worldPos3*1.5*nsc3, 16)*0.2 + snoiseGrad(worldPos3*0.5*nsc3, 10)*0.2));
+        // N = normalize(wNormal);
 
-        float t = snoise(worldPos3*0.2, 16);
 
         vec3 V = normalize(wView);
         vec3 L = normalize(wLight);
@@ -85,5 +91,6 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         // fragmentColor = texture(treeTexture, texCoord);
         // fragmentColor = vec4(N*0.5 + 0.5, 1);
         // fragmentColor = vec4(texCoord, 0, 1);
+        // fragmentColor = vec4(vec3(t), 1);
     }
 `;

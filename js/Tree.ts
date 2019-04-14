@@ -2,11 +2,11 @@
 const ATTRACTION_POINT_COUNT = 250*6;
 
 // attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(0, 250, 0);
+const CIRCLE_CENTER = new Vec3(0, 300, 0);
 const CIRCLE_RADIUS = 120;
 
 // space colonization algorithm constants
-const INFL_MIN_DIST = 12/3;
+const INFL_MIN_DIST = 12;
 const INFL_MAX_DIST = 150;
 const BRANCH_LENGTH = 30;
 const BRANCH_LENGTH_SCALE = 0.99;
@@ -18,7 +18,7 @@ const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
 const TREE_STARTING_WIDTH = 12;
 
 // stop grwoing after reaching this many tree nodes
-const MAX_TREE_SIZE = 250*2;
+const MAX_TREE_SIZE = 250;
 
 // how much the previous growing direction should affect the next node
 // 0 - not taken into consideration
@@ -38,10 +38,10 @@ class TreeNode {
     public branch_length: number;
     public depth: number;
 
-    constructor(parent: TreeNode | null, pos: Vec3, dir: Vec3, width: number, normal: Vec3, br = 0) {
+    constructor(parent: TreeNode | null, pos: Vec3, tangent: Vec3, width: number, normal: Vec3, br = 0) {
         this.parent = parent;
         this.pos = pos;
-        this.tangent = dir.clone().normalize();
+        this.tangent = tangent.clone().normalize();
         this.width = width;
         this.children = [];
         this.normal = normal.clone().normalize();

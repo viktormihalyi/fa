@@ -24,6 +24,10 @@ function randomBetween(min: number, max: number): number {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
 
+function randomBetweenFloat(min: number, max: number): number {
+    return Math.random()*(max-min)+min;
+}
+
 function lerp(a: number, b: number, t: number): number {
     return a * (1 - t) + b * t;
 }

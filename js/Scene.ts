@@ -15,12 +15,21 @@ class Scene {
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.enable(gl.BLEND);
 
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
         const tree = new Tree();
         tree.growFully();
+        const avg = (arr: number[]) => {
+            let sum = 0;
+            for (const el of arr) {
+                sum += el;
+            }
+            return sum / arr.length;
+        }
+        console.log(`max depth: ${Math.max(...tree.nodes.map(n => n.depth))}, avg depth: ${avg(tree.nodes.map(n => n.depth))}`);
 
         const treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
             { position: 0, name: 'vertexPosition' },
@@ -38,7 +47,7 @@ class Scene {
         treeMaterial.mossTexture.set(new Texture2D(gl, `media/mossy_rock.jpg`));
         treeMaterial.mossTextureNorm.set(new Texture2D(gl, `media/mossy_rock_normal.jpg`));
         treeMaterial.mossTextureHeight.set(new Texture2D(gl, `media/mossy_rock_height.jpg`));
-        treeMaterial.mossyness.set(1.0);
+        treeMaterial.mossyness.set(0.0);
 
         this.treem = treeMaterial;
 
@@ -54,7 +63,7 @@ class Scene {
 
         const leafMaterial = new Material(gl, leavesShader);
         leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
-        leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha.jpg`));
+        leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha2.jpg`));
         leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
 
         const quadGeometry = new QuadGeometry(gl);
@@ -87,7 +96,7 @@ class Scene {
             public orientationMatrix: Mat4;
             public modelMatrix: Mat4;
 
-            constructor(position: Vec3, treeTangent: Vec3, treeNormal: Vec3) {
+            constructor(position: Vec3, treeTangent: Vec3, treeNormal: Vec3, i: number) {
                 this.position = position;
 
                 // make the twig stick out of the tree
@@ -98,9 +107,9 @@ class Scene {
 
                 this.orientationMatrix = createOrientationMatrix(this.tangent, this.normal, this.binormal);
                 this.modelMatrix = new Mat4()
-                    .scale(0.1)
+                    .scale(randomBetweenFloat(0.02, 0.25))
                     .mul(this.orientationMatrix)
-                    .rotate(rad(randomBetween(0, 360)), treeTangent)
+                    .rotate(rad(i*120 + randomBetween(-15, 15)), treeTangent)
                     .translate(this.position);
             }
         }
@@ -109,9 +118,9 @@ class Scene {
             .filter(node => node.width < 3 && node.children.length > 0)
             .flatMap(node => {
                 let agak = [];
-                const leaf_count = randomBetween(2, 4)*2;
+                const leaf_count = randomBetween(2, 3);
                 for (let i = 0; i < leaf_count; i++) {
-                    agak.push(new Twig(node.parent!.pos, node.tangent, node.normal));
+                    agak.push(new Twig(node.parent!.pos, node.tangent, node.normal, i));
                 }
                 return agak;
             });
@@ -125,11 +134,11 @@ class Scene {
                 .map(m => new Mat4()
                     .scale(LEAF_SCALE)
                     // rotate
-                        // .translate(new Vec3(0, 1*LEAF_SCALE, 0))
-                        // .rotate(rad(90), m.bitangent)
-                        // .translate(new Vec3(0, -1*LEAF_SCALE, 0))
-                    .rotate(rad(-15))
-                    .translate(new Vec3(0, LEAF_SCALE*2, 0))
+                        // .translate(new Vec3(0, 0.5*LEAF_SCALE, 0))
+                        // .rotate(rad(90), m.tangent)
+                        // .translate(new Vec3(0, -0.5*LEAF_SCALE, 0))
+                    .rotate(rad(-13))
+                    .translate(new Vec3(0, LEAF_SCALE*1.6, 0))
                     .mul(m.modelMatrix)
                 )
         );

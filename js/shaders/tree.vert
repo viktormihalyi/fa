@@ -14,6 +14,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         mat4 viewProj;
     } camera;
 
+    out vec3 modelPosition;
     out vec2 texCoord;
     out vec3 wNormal;
     out vec3 wLight;
@@ -46,6 +47,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         worldPos = wPos.xyz;
 #endif
         texCoord = vertexTexCoord;
+        modelPosition = vertexPosition;
 
         gl_Position = wPos * camera.viewProj;
     }
