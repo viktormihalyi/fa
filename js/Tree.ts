@@ -148,66 +148,6 @@ class Tree {
         return new TreeNode(null, interpolated_pos, interpolated_dir, lerp(nodeA.width, nodeB.width, t), interpolated_normal, lerp(nodeA.branch_length, nodeB.branch_length, t));
     }
 
-    add_middle_spline(): void {
-        for (const s of this.middleNodes) {
-            this.nodes.splice(this.nodes.indexOf(s), 1);
-        }
-        this.middleNodes = [];
-
-        for (const node of this.nodes) {
-            if (node.children.length === 2) {
-                const childA = node.children[0];
-                const childB = node.children[1];
-
-                const middle_point = node.pos
-                                    .plus(childA.pos.times(2))
-                                    .plus(childB.pos.times(2))
-                                    .over(5);
-
-                const a_to_b_normal = childB.pos.minus(childA.pos).normalize();
-                const b_to_a_normal = childA.pos.minus(childB.pos).normalize();
-
-                const childA_opposite = childA.opposite();
-                const childB_opposite = childB.opposite();
-
-                const middle_width = (childA.width + childB.width) / 2.1;
-                const middle_normal = Tree.grow_rmf_normal_raw(childA.pos, childA.tangent.times(-1), childA.normal.times(-1), a_to_b_normal);
-                const middle_normalb = Tree.grow_rmf_normal_raw(childB.pos, childB.tangent.times(-1), childB.normal.times(-1), b_to_a_normal);
-
-                {
-                    const middle_node = new TreeNode(childA_opposite, middle_point, a_to_b_normal, middle_width, middle_normal, childA.branch_length);
-
-                    const bcopy = childB.clone();
-
-                    childA_opposite.children.push(middle_node);
-                    middle_node.children.push(bcopy);
-                    bcopy.parent = middle_node;
-
-                    this.nodes.push(childA_opposite);
-                    this.nodes.push(middle_node);
-                    this.nodes.push(bcopy);
-
-                    this.middleNodes.push(childA_opposite);
-                    this.middleNodes.push(middle_node);
-                    this.middleNodes.push(bcopy);
-                }
-                if (false)
-                {
-                    const middle_node = new TreeNode(childB_opposite, middle_point, b_to_a_normal, middle_width, middle_normalb);
-
-                    childB_opposite.children.push(middle_node);
-
-                    this.nodes.push(childB_opposite);
-                    this.nodes.push(middle_node);
-
-                    this.middleNodes.push(childB_opposite);
-                    this.middleNodes.push(middle_node);
-                }
-
-            }
-        }
-    }
-
     remove_intersecting_nodes(rougness = 1): void {
         const bifurcation_nodes = this.nodes.filter(node => node.children.length > 1);
 
