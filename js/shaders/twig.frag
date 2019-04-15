@@ -1,7 +1,7 @@
 Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 300 es
     precision highp float;
 
-    in vec4 worldPos;
+    in vec3 worldPos;
     out vec4 fragmentColor;
 
     float snoise(vec3 r, int it) {
@@ -26,9 +26,10 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
 
     void main(void) {
-        vec3 worldPos3 = worldPos.xyz / worldPos.w * 5.0;
-        vec3 nsc3 = vec3(1, 0.07, 1);
-        float t = snoise(worldPos3*nsc3, 16);
-        fragmentColor = vec4(vec3(85,107,47)/255.0*t, 1);
+        vec3 nsc3 = vec3(1, 0.07, 1)*5.0;
+        float t = snoise(worldPos*nsc3, 16);
+        vec3 color = vec3(85,107,47)/255.0*t;
+        color *= distance(worldPos, vec3(0, 200, 0)) / 120.0;
+        fragmentColor = vec4(color, 1);
     }
 `;

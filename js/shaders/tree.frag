@@ -84,6 +84,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         float nh = max(dot(N, H), 0.0);
 
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.75);
+        color *= distance(modelPosition, vec3(0, 200, 0)) / 120.0;
         fragmentColor = vec4(color, 1);
         // fragmentColor = vec4(smoothstep(vec3(t), vec3(t)/2.0, vec3(0.4)), 1);
 

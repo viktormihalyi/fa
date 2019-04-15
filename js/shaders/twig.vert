@@ -7,10 +7,10 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         mat4 viewProj;
     } camera;
 
-    out vec4 worldPos;
+    out vec3 worldPos;
 
     void main(void) {
-        worldPos = vec4(vertexPosition, 1) * modelMatrix;
-        gl_Position = worldPos * camera.viewProj;
+        worldPos = (vec4(vertexPosition, 1) * modelMatrix).xyz;
+        gl_Position = vec4(worldPos, 1) * camera.viewProj;
     }
 `;

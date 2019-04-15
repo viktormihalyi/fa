@@ -43,6 +43,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
         vec3 m = translucency*1.0 + vec3(255,192,203)/255.0*0.0;
         vec3 color = m;// * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
+        color *= distance(worldPos, vec3(0, 200, 0)) / 120.0;
         fragmentColor = vec4(color, alpha);
         // fragmentColor = vec4(N*0.5+0.5, 1);
         // fragmentColor = vec4(1, 0, 0, 1);
