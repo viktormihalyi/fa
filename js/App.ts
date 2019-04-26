@@ -4,7 +4,7 @@ class App {
 
     private gl: WebGL2RenderingContext;
     private keysPressed: any;
-    private canvas: HTMLCanvasElement;
+    public canvas: HTMLCanvasElement;
     private status: HTMLElement;
     private scene: Scene;
 
@@ -19,7 +19,7 @@ class App {
         this.keysPressed = {};
 
         // create a simple scene
-        this.scene = new Scene(this.gl);
+        this.scene = new Scene(this.gl, this);
         this.resize();
     }
     // match WebGL rendering resolution and viewport to the canvas size

@@ -7,8 +7,8 @@ class Mesh {
         this.material = material;
     }
 
-    draw(): void {
-        this.material.commit();
+    draw(other_material?: Material): void {
+        (other_material || this.material).commit();
         this.geometry.draw();
     }
 }

@@ -1,8 +1,12 @@
 Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 300 es
     precision highp float;
 
-    in vec3 worldPos;
     out vec4 fragmentColor;
+
+    in vec3 worldPos;
+    in vec3 lightSpacePos;
+
+    uniform sampler2D depthTexture;
 
     float snoise(vec3 r, int it) {
         vec3 s = vec3(7502, 22777, 4767);
@@ -30,6 +34,13 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         float t = snoise(worldPos*nsc3, 16);
         vec3 color = vec3(85,107,47)/255.0*t;
         color *= distance(worldPos, vec3(0, 200, 0)) / 120.0;
+
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
+            color *= 0.1;
+            // color = vec3(1, 0, 0);
+        }
+
         fragmentColor = vec4(color, 1);
     }
 `;

@@ -172,3 +172,44 @@ function createOrientationMatrix(tangent: Vec3, normal: Vec3, binormal?: Vec3): 
         0,   0,   0,   1
     );
 }
+
+function lookAt(eye: Vec3, center: Vec3, up: Vec3): Mat4 {
+    let X, Y, Z;
+
+    Z = eye.minus(center).normalize();
+    Y = up;
+    X = Y.cross(Z).normalize();
+    Y = Z.cross(X).normalize();
+
+    return new Mat4(
+        X.x, X.y, X.z, 0,
+        Y.x, Y.y, Y.z, 0,
+        Z.x, Z.y, Z.z, 0,
+        0, 0, 0, 1
+    )
+    .translate(eye)
+    .invert()
+}
+
+// n: near plane
+// f: far plane
+function projection(fov: number, aspect: number, n: number, f: number): Mat4 {
+    const yScale = 1.0 / Math.tan(fov * 0.5);
+    const xScale = yScale / aspect;
+
+    return new Mat4(
+        xScale, 0, 0, 0,
+        0, yScale, 0, 0,
+        0, 0, (n + f) / (n - f), -1,
+        0, 0, 2 * n * f / (n - f), 0
+    );
+}
+
+function ortho(left: number, right: number, bottom: number, top: number, near: number, far: number): Mat4 {
+    return new Mat4(
+        2/(right-left), 0, 0, 0,
+        0, 2/(top-bottom), 0, 0,
+        0, 0, -2/(far-near), 0,
+        -(right+left)/(right-left), -(top+bottom)/(top-bottom), -(far+near)/(far-near), 1
+    );
+}

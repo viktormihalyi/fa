@@ -7,9 +7,13 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     uniform sampler2D mossTexture;
     uniform sampler2D mossTextureNorm;
     uniform sampler2D mossTextureHeight;
+    uniform sampler2D depthTexture;
 
     uniform float mossyness;
 
+    uniform float rendermode;
+
+    in vec3 lightSpacePos;
     in vec3 modelPosition;
     in vec3 worldPos;
     in vec3 wNormal;
@@ -51,7 +55,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         float t = snoise(modelPosition);
 
         float bark_height = texture(treeTextureHeight, texCoord).r;
-        float mossy_rock_height = texture(mossTextureHeight, texCoord).r + t * mossyness;
+        float mossy_rock_height = texture(mossTextureHeight, texCoord).r + t * mossyness - 1.0;
 
 
         vec3 N;
@@ -85,13 +89,22 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.75);
         color *= distance(modelPosition, vec3(0, 200, 0)) / 120.0;
+
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
+            color *= 0.1;
+            // color = vec3(1, 0, 0);
+        }
+
         fragmentColor = vec4(color, 1);
         // fragmentColor = vec4(smoothstep(vec3(t), vec3(t)/2.0, vec3(0.4)), 1);
 
-        // fragmentColor = vec4(m, 1);
-        // fragmentColor = texture(treeTexture, texCoord);
-        // fragmentColor = vec4(N*0.5 + 0.5, 1);
-        // fragmentColor = vec4(texCoord, 0, 1);
-        // fragmentColor = vec4(vec3(t), 1);
+        switch (int(rendermode)) {
+            case 1: fragmentColor = vec4(m, 1); break;
+            case 2: fragmentColor = texture(treeTexture, texCoord); break;
+            case 3: fragmentColor = vec4(N*0.5 + 0.5, 1); break;
+            case 4: fragmentColor = vec4(texCoord, 0, 1); break;
+            case 5: fragmentColor = vec4(vec3(t), 1); break;
+        }
     }
 `;

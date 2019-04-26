@@ -66,7 +66,7 @@ class QuadGeometry implements IGeometry {
         const gl = this.gl;
         gl.bindVertexArray(this.inputLayout);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        // gl.drawElements(gl.TRIANGLES, this.vertexCount, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, this.vertexCount, gl.UNSIGNED_SHORT, 0);
     }
 }
 

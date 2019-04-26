@@ -114,11 +114,11 @@ class Tree {
         }
     }
 
-    public growFully() {
+    public growFully(): void {
         for (let i = 0; i < 100; i++) {
             this.grow();
         }
-        this.spline(1);
+        // this.spline(1);
         // this.remove_intersecting_nodes(0.8);
         this.add_ends();
         this.calculate_depth();
@@ -129,7 +129,8 @@ class Tree {
         function recursive_set_v(root: TreeNode, n: number) {
             root.depth = n;
             for (const child of root.children) {
-                recursive_set_v(child, n + 1);
+                const dist_to_parent = child.pos.minus(root.pos).length();
+                recursive_set_v(child, n + dist_to_parent/BRANCH_LENGTH);
             }
         }
         recursive_set_v(this.nodes[0], 0);
@@ -326,19 +327,6 @@ class Tree {
         return Tree.grow_rmf_normal({pos, tangent: dir, normal} as TreeNode, direction);
     }
 
-    // grow_from_no(source, direction) {
-    //     const principal_normal = Tree.grow_rmf_normal(source, direction);
-
-    //     const angle = source.dir.dot(direction);
-
-    //     return new TreeNode(
-    //         source,
-    //         source.pos.plus(direction.times(BRANCH_LENGTH)),
-    //         direction,
-    //         source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
-    //         principal_normal);
-    // }
-
     growFrom(source: TreeNode, direction: Vec3): void {
         // frenet frame
         // https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas
@@ -395,16 +383,10 @@ class Tree {
         let found = false;
         for (let apoint of this.attractionPoints) {
 
-            let closest: TreeNode|null;
-            closest = null;
+            let closest: TreeNode|null  = null;
             let closestDist = Number.MAX_SAFE_INTEGER;
 
             for (let treeNode of this.nodes) {
-                // only allow 2 children
-                // if (treeNode.children.length >= 2) {
-                //     continue;
-                // }
-
                 let dist = this.dist_to_node(apoint, treeNode);
                 if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
                     closest = treeNode;

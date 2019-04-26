@@ -22,9 +22,9 @@ class GameObject {
             .translate(this.position);
     }
 
-    draw(): void {
+    draw(other_material?: Material): void {
         this.updateModelMatrix();
         Uniforms.camera.modelMatrix.set(this.modelMatrix);
-        this.mesh.draw();
+        this.mesh.draw(other_material);
     }
 }

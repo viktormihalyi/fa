@@ -8,28 +8,53 @@ class Scene {
 
     private camera: PerspectiveCamera;
     private gameObjects: GameObject[];
-    treem: Material;
+    public treem: Material;
 
-    constructor(gl: WebGL2RenderingContext) {
+    private depthTexture: WebGLTexture;
+    private fb: WebGLFramebuffer;
+
+    private lightPos: Vec3;
+    private setLight: () => void;
+    depthMaterial: Material;
+    fullScreenQuad: GameObject;
+
+    constructor(gl: WebGL2RenderingContext, app: App) {
         this.gl = gl;
 
+        const targetTextureWidth = app.canvas.clientWidth;
+        const targetTextureHeight = app.canvas.clientHeight;
+
+        gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        gl.enable(gl.BLEND);
 
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
+        this.depthTexture = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, this.depthTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, targetTextureWidth, targetTextureHeight, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+        this.fb = gl.createFramebuffer()!;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.depthTexture, 0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        const depthShader = Program.from(gl, 'depth.vert', 'depth.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+        ]);
+        this.depthMaterial = new Material(gl, depthShader);
+
+
+
         const tree = new Tree();
         tree.growFully();
-        const avg = (arr: number[]) => {
-            let sum = 0;
-            for (const el of arr) {
-                sum += el;
-            }
-            return sum / arr.length;
-        }
-        console.log(`max depth: ${Math.max(...tree.nodes.map(n => n.depth))}, avg depth: ${avg(tree.nodes.map(n => n.depth))}`);
 
         const treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
             { position: 0, name: 'vertexPosition' },
@@ -41,15 +66,18 @@ class Scene {
         const treeGeometry = new TreeGeometry(gl);
         treeGeometry.setPoints(tree);
         const treeMaterial = new Material(gl, treeShader);
-        treeMaterial.treeTexture.set(new Texture2D(gl, `media/bark.jpg`));
-        treeMaterial.treeTextureNorm.set(new Texture2D(gl, `media/bark_normal.jpg`));
-        treeMaterial.treeTextureHeight.set(new Texture2D(gl, `media/bark_height.jpg`));
-        treeMaterial.mossTexture.set(new Texture2D(gl, `media/mossy_rock.jpg`));
-        treeMaterial.mossTextureNorm.set(new Texture2D(gl, `media/mossy_rock_normal.jpg`));
-        treeMaterial.mossTextureHeight.set(new Texture2D(gl, `media/mossy_rock_height.jpg`));
-        treeMaterial.mossyness.set(0.0);
+        treeMaterial.treeTexture.set(new Texture2D(gl, 'media/bark.jpg'));
+        treeMaterial.treeTextureNorm.set(new Texture2D(gl, 'media/bark_normal.jpg'));
+        treeMaterial.treeTextureHeight.set(new Texture2D(gl, 'media/bark_height.jpg'));
+        treeMaterial.mossTexture.set(new Texture2D(gl, 'media/mossy_rock.jpg'));
+        treeMaterial.mossTextureNorm.set(new Texture2D(gl, 'media/mossy_rock_normal.jpg'));
+        treeMaterial.mossTextureHeight.set(new Texture2D(gl, 'media/mossy_rock_height.jpg'));
+        treeMaterial.mossyness.set(1.75);
+        treeMaterial.depthTexture.set(this.depthTexture);
 
         this.treem = treeMaterial;
+        this.treem.rendermode.set(0);
+        console.log(treeMaterial);
 
         const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial));
 
@@ -65,10 +93,20 @@ class Scene {
         leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
         leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha.jpg`));
         leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
+        leafMaterial.depthTexture.set(this.depthTexture);
 
         const quadGeometry = new QuadGeometry(gl);
         const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);
         const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial));
+
+        const fquadShader = Program.from(gl, 'fquad.vert', 'fquad.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+        ]);
+        const fquadMaterial = new Material(gl, fquadShader);
+        fquadMaterial.text.set(this.depthTexture);
+        this.fullScreenQuad = new GameObject(new Mesh(quadGeometry, fquadMaterial));
 
         const frenetShader = Program.from(gl, 'frenet.vert', 'frenet.frag', [
             { position: 0, name: 'vertexPosition' },
@@ -84,6 +122,7 @@ class Scene {
             { position: 1, name: 'vertexNormal' },
             { position: 2, name: 'modelMatrix' },
         ]));
+        twigShader.depthTexture.set(this.depthTexture);
         const twigs = new InstancedGeometry(gl, new TwigGeometry(gl), 2, false);
         twigs.setModelMatrices([new Mat4().scale(new Vec3(1, 0.07, 1))]);
 
@@ -162,6 +201,19 @@ class Scene {
         // this.gameObjects.push(testQ);
 
         this.camera = new PerspectiveCamera();
+        this.lightPos = new Vec3();
+
+        this.setLight = () => {
+            const lightProjection = ortho(-100, 100, -100, 100, 1, 500);
+            // const lightProjection = projection(1, 1, 1, 100);
+            const lightView = lookAt(this.lightPos, new Vec3(), PerspectiveCamera.worldUp);
+
+            Uniforms.camera.lightSpaceMatrix
+                .set(lightView)
+                .mul(lightProjection);
+            }
+        this.setLight();
+
     }
 
     update(gl: WebGL2RenderingContext, keysPressed: any): void {
@@ -181,15 +233,56 @@ class Scene {
 
         Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
         Uniforms.camera.wEye.set(this.camera.position);
-        Uniforms.camera.wLiPos.set(new Vec3(Math.cos(t/2)*300, 500, Math.sin(t/2)*300));
 
-        if (keysPressed.SPACE) {
-            this.camera.position.set(Uniforms.camera.wLiPos);
+        this.lightPos.set(Math.cos(t/2)*300, 500, Math.sin(t/2)*300);
+        Uniforms.camera.wLiPos.set(this.lightPos);
+        this.setLight();
+
+        // if (keysPressed.SPACE) {
+        //     this.camera.position.set(Uniforms.camera.wLiPos);
+        // }
+
+        if (keysPressed['0']) {
+            this.treem.rendermode.set(0);
+        }
+        if (keysPressed['1']) {
+            this.treem.rendermode.set(1);
+        }
+        if (keysPressed['2']) {
+            this.treem.rendermode.set(2);
+        }
+        if (keysPressed['3']) {
+            this.treem.rendermode.set(3);
+        }
+        if (keysPressed['4']) {
+            this.treem.rendermode.set(4);
+        }
+        if (keysPressed['5']) {
+            this.treem.rendermode.set(5);
         }
 
-        // draw objects
-        for (const obj of this.gameObjects) {
-            obj.draw();
+        // // draw objects
+        // for (const obj of this.gameObjects) {
+        //     obj.draw();
+        // }
+
+
+        // render to framebuffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        for (const go of this.gameObjects) {
+            go.draw(this.depthMaterial);
+        }
+
+        // render to screen
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        if (keysPressed.SPACE) {
+            this.fullScreenQuad.draw();
+        } else {
+            for (const go of this.gameObjects) {
+                go.draw();
+            }
         }
     }
 
