@@ -174,11 +174,9 @@ function createOrientationMatrix(tangent: Vec3, normal: Vec3, binormal?: Vec3): 
 }
 
 function lookAt(eye: Vec3, center: Vec3, up: Vec3): Mat4 {
-    let X, Y, Z;
-
-    Z = eye.minus(center).normalize();
-    Y = up;
-    X = Y.cross(Z).normalize();
+    let Z = eye.minus(center).normalize();
+    let Y = up;
+    let X = Y.cross(Z).normalize();
     Y = Z.cross(X).normalize();
 
     return new Mat4(

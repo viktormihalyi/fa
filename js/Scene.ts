@@ -1,8 +1,36 @@
 const BG_COLOR = new Vec3(240,248,255).over(255);
 
+class Twig {
+    public position: Vec3;
+    public tangent: Vec3;
+    public normal: Vec3;
+    public binormal: Vec3;
+    public orientationMatrix: Mat4;
+    public modelMatrix: Mat4;
+
+    constructor(position: Vec3, treeTangent: Vec3, treeNormal: Vec3, i: number) {
+        this.position = position;
+
+        // make the twig stick out of the tree
+        this.tangent = treeTangent.times(2).plus(treeNormal).normalize();
+
+        this.binormal = this.tangent.cross(treeNormal).normalize();
+        this.normal = this.tangent.cross(this.binormal).normalize();
+
+        this.orientationMatrix = createOrientationMatrix(this.tangent, this.normal, this.binormal);
+        this.modelMatrix = new Mat4()
+            .scale(randomBetweenFloat(0.02, 0.25))
+            .mul(this.orientationMatrix)
+            .rotate(rad(i*120 + randomBetween(-15, 15)), treeTangent)
+            .translate(this.position);
+    }
+}
+
+
 class Scene {
     public gl: WebGL2RenderingContext;
 
+    // time
     private timeAtFirstFrame: number;
     private timeAtLastFrame: number;
 
@@ -14,23 +42,88 @@ class Scene {
     private fb: WebGLFramebuffer;
 
     private lightPos: Vec3;
+    private lightLookat: Vec3;
     private setLight: () => void;
-    depthMaterial: Material;
-    fullScreenQuad: GameObject;
+    private depthMaterial: Material;
+    private fullScreenQuad: GameObject;
+    private treeObj: GameObject;
+
+    // shaders
+    private depthShader?: Program;
+    private treeShader?: Program;
+    private leavesShader?: Program;
+    private fquadShader?: Program;
+    private frenetShader?: Program;
+    private twigShader?: Program;
+
+    initShaders() {
+        console.log('compiling and linking shaders');
+        const gl = this.gl;
+
+        this.depthShader = Program.from(gl, 'depth.vert', 'depth.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+        ]);
+
+        this.treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+            { position: 3, name: 'tangent' },
+            { position: 4, name: 'bitangent' },
+        ]);
+
+        this.leavesShader = Program.from(gl, 'leaves.vert', 'leaves.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+            { position: 3, name: 'modelMatrix' },
+        ]);
+
+        this.fquadShader = Program.from(gl, 'fquad.vert', 'fquad.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 2, name: 'vertexTexCoord' },
+        ]);
+
+        this.frenetShader = Program.from(gl, 'frenet.vert', 'frenet.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexColor' },
+        ]);
+
+        this.twigShader = Program.from(gl, 'twig.vert', 'twig.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 3, name: 'modelMatrix' },
+        ]);
+    }
 
     constructor(gl: WebGL2RenderingContext, app: App) {
         this.gl = gl;
+        this.initShaders();
 
-        const targetTextureWidth = app.canvas.clientWidth;
-        const targetTextureHeight = app.canvas.clientHeight;
 
-        gl.enable(gl.DEPTH_TEST);
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
+        // time
+        // -------------------------------------------------------------------
         this.timeAtFirstFrame = new Date().getTime();
         this.timeAtLastFrame = this.timeAtFirstFrame;
 
+
+        // opengl settings
+        // -------------------------------------------------------------------
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.clearColor(BG_COLOR.x, BG_COLOR.y, BG_COLOR.z, 1);
+        gl.clearDepth(1.0);
+
+
+        // create depth texture
+        // -------------------------------------------------------------------
+        console.log('creating texture for depth buffer');
+        const targetTextureWidth = app.canvas.clientWidth;
+        const targetTextureHeight = app.canvas.clientHeight;
         this.depthTexture = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, this.depthTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, targetTextureWidth, targetTextureHeight, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
@@ -39,33 +132,26 @@ class Scene {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
+
+        // create depth buffer
+        // -------------------------------------------------------------------
+        console.log('creating depth framebuffer');
         this.fb = gl.createFramebuffer()!;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.depthTexture, 0);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        const depthShader = Program.from(gl, 'depth.vert', 'depth.frag', [
-            { position: 0, name: 'vertexPosition' },
-            { position: 1, name: 'vertexNormal' },
-            { position: 2, name: 'vertexTexCoord' },
-        ]);
-        this.depthMaterial = new Material(gl, depthShader);
+        this.depthMaterial = new Material(gl, this.depthShader!);
 
 
-
+        // tree
+        // -------------------------------------------------------------------
+        console.log('creating tree');
         const tree = new Tree();
         tree.growFully();
 
-        const treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
-            { position: 0, name: 'vertexPosition' },
-            { position: 1, name: 'vertexNormal' },
-            { position: 2, name: 'vertexTexCoord' },
-            { position: 3, name: 'tangent' },
-            { position: 4, name: 'bitangent' },
-        ]);
         const treeGeometry = new TreeGeometry(gl);
         treeGeometry.setPoints(tree);
-        const treeMaterial = new Material(gl, treeShader);
+        const treeMaterial = new Material(gl, this.treeShader!);
         treeMaterial.treeTexture.set(new Texture2D(gl, 'media/bark.jpg'));
         treeMaterial.treeTextureNorm.set(new Texture2D(gl, 'media/bark_normal.jpg'));
         treeMaterial.treeTextureHeight.set(new Texture2D(gl, 'media/bark_height.jpg'));
@@ -82,14 +168,10 @@ class Scene {
         const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial));
 
 
-        const leavesShader = Program.from(gl, 'leaves.vert', 'leaves.frag', [
-            { position: 0, name: 'vertexPosition' },
-            { position: 1, name: 'vertexNormal' },
-            { position: 2, name: 'vertexTexCoord' },
-            { position: 3, name: 'modelM' },
-        ]);
-
-        const leafMaterial = new Material(gl, leavesShader);
+        // leaves
+        // -------------------------------------------------------------------
+        console.log('creating leaves');
+        const leafMaterial = new Material(gl, this.leavesShader!);
         leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
         leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha.jpg`));
         leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
@@ -99,60 +181,36 @@ class Scene {
         const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);
         const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial));
 
-        const fquadShader = Program.from(gl, 'fquad.vert', 'fquad.frag', [
-            { position: 0, name: 'vertexPosition' },
-            { position: 1, name: 'vertexNormal' },
-            { position: 2, name: 'vertexTexCoord' },
-        ]);
-        const fquadMaterial = new Material(gl, fquadShader);
+
+        // fullscreen quad
+        // -------------------------------------------------------------------
+        console.log('creating fullscreen quad');
+        const fquadMaterial = new Material(gl, this.fquadShader!);
         fquadMaterial.text.set(this.depthTexture);
         this.fullScreenQuad = new GameObject(new Mesh(quadGeometry, fquadMaterial));
 
-        const frenetShader = Program.from(gl, 'frenet.vert', 'frenet.frag', [
-            { position: 0, name: 'vertexPosition' },
-            { position: 1, name: 'vertexColor' },
-        ]);
-        const frenetMaterial = new Material(gl, frenetShader);
+
+        // frenet frames
+        // -------------------------------------------------------------------
+        console.log('creating frenet frames');
+        const frenetMaterial = new Material(gl, this.frenetShader!);
         const frenetGeometry = new FrenetGeometry(gl);
         frenetGeometry.setPoints(tree);
         const frenetFrames = new GameObject(new Mesh(frenetGeometry, frenetMaterial));
 
-        const twigShader = new Material(gl, Program.from(gl, 'twig.vert', 'twig.frag', [
-            { position: 0, name: 'vertexPosition' },
-            { position: 1, name: 'vertexNormal' },
-            { position: 2, name: 'modelMatrix' },
-        ]));
-        twigShader.depthTexture.set(this.depthTexture);
-        const twigs = new InstancedGeometry(gl, new TwigGeometry(gl), 2, false);
+
+        // twigs
+        // -------------------------------------------------------------------
+        console.log('creating twigs');
+        const twigMaterial = new Material(gl, this.twigShader!);
+        twigMaterial.depthTexture.set(this.depthTexture);
+        const twigs = new InstancedGeometry(gl, new TwigGeometry(gl), 3, false);
         twigs.setModelMatrices([new Mat4().scale(new Vec3(1, 0.07, 1))]);
 
 
-        class Twig {
-            public position: Vec3;
-            public tangent: Vec3;
-            public normal: Vec3;
-            public binormal: Vec3;
-            public orientationMatrix: Mat4;
-            public modelMatrix: Mat4;
-
-            constructor(position: Vec3, treeTangent: Vec3, treeNormal: Vec3, i: number) {
-                this.position = position;
-
-                // make the twig stick out of the tree
-                this.tangent = treeTangent.times(2).plus(treeNormal).normalize();
-
-                this.binormal = this.tangent.cross(treeNormal).normalize();
-                this.normal = this.tangent.cross(this.binormal).normalize();
-
-                this.orientationMatrix = createOrientationMatrix(this.tangent, this.normal, this.binormal);
-                this.modelMatrix = new Mat4()
-                    .scale(randomBetweenFloat(0.02, 0.25))
-                    .mul(this.orientationMatrix)
-                    .rotate(rad(i*120 + randomBetween(-15, 15)), treeTangent)
-                    .translate(this.position);
-            }
-        }
-
+        // twig modelmatrices
+        // -------------------------------------------------------------------
+        console.log('calculating twig model matrices');
         const twigs_model = tree.nodes
             .filter(node => node.width < 3 && node.children.length > 0)
             .flatMap(node => {
@@ -167,6 +225,10 @@ class Scene {
         console.log(`twig count: ${twigs_model.length}`);
         twigs.setModelMatrices(twigs_model.map(t => t.modelMatrix));
 
+
+        // leaf modelmatrices
+        // -------------------------------------------------------------------
+        console.log('calculating leaf model matrices');
         const LEAF_SCALE = 100.0;
         leavesGeometry.setModelMatrices(
             twigs_model
@@ -183,58 +245,66 @@ class Scene {
         );
         console.log(`leaf count: ${twigs_model.length}`);
 
+        this.treeObj = treeObject;
+
+
+        // game objects
+        // -------------------------------------------------------------------
         this.gameObjects = [];
         this.gameObjects.push(treeObject);
         this.gameObjects.push(leavesObject);
-        this.gameObjects.push(new GameObject(new Mesh(twigs, twigShader)));
+        this.gameObjects.push(new GameObject(new Mesh(twigs, twigMaterial)));
         // this.gameObjects.push(frenetFrames);
 
-        const testQuad = new Material(gl, Program.from(gl, 'quad.vert', 'quad.frag', [
-            { position: 0, name: 'vertexPosition' }
-        ]));
 
-        const testQ = new GameObject(new Mesh(quadGeometry, testQuad));
-        testQ.position = new Vec3(-250, 200, 0);
-        testQ.orientation = radians(90);
-        testQ.scale = new Vec3(1, 1, 1).times(50);
-
-        // this.gameObjects.push(testQ);
-
+        // light and camera
+        // -------------------------------------------------------------------
         this.camera = new PerspectiveCamera();
         this.lightPos = new Vec3();
+        this.lightLookat = new Vec3(0, 100, 0);
 
         this.setLight = () => {
-            const lightProjection = ortho(-100, 100, -100, 100, 1, 500);
-            // const lightProjection = projection(1, 1, 1, 100);
-            const lightView = lookAt(this.lightPos, new Vec3(), PerspectiveCamera.worldUp);
+            const lightView = lookAt(this.lightPos, this.lightLookat, PerspectiveCamera.WORLD_UP);
+            const lightProjection = ortho(-300, 300, -300, 300, 1, 1000);
+
+            // const lightProjection = projection(1, 1, 10, 1000);
 
             Uniforms.camera.lightSpaceMatrix
                 .set(lightView)
                 .mul(lightProjection);
+
+            Uniforms.camera.viewProj
+                .set(lightView)
+                .mul(lightProjection);
+
+            // Uniforms.camera.lightSpaceMatrix.set(this.camera.viewProjMatrix);
             }
         this.setLight();
-
     }
 
     update(gl: WebGL2RenderingContext, keysPressed: any): void {
-
+        // time
+        // -------------------------------------------------------------------
         const timeAtThisFrame = new Date().getTime();
         const dt = (timeAtThisFrame - this.timeAtLastFrame) / 1000.0;
         const t = (timeAtThisFrame - this.timeAtFirstFrame) / 1000.0;
         this.timeAtLastFrame = timeAtThisFrame;
 
-        // clear the screen
-        gl.clearColor(BG_COLOR.x, BG_COLOR.y, BG_COLOR.z, 1);
-        gl.clearDepth(1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // update camera
+        // -------------------------------------------------------------------
         this.camera.move(dt, keysPressed);
 
+
+        // set camera uniforms
+        // -------------------------------------------------------------------
         Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
         Uniforms.camera.wEye.set(this.camera.position);
 
-        this.lightPos.set(Math.cos(t/2)*300, 500, Math.sin(t/2)*300);
+
+        // set light uniforms
+        // -------------------------------------------------------------------
+        this.lightPos.set(Math.cos(t/2)*100, 100, Math.sin(t/2)*100);
         Uniforms.camera.wLiPos.set(this.lightPos);
         this.setLight();
 
@@ -242,39 +312,28 @@ class Scene {
         //     this.camera.position.set(Uniforms.camera.wLiPos);
         // }
 
-        if (keysPressed['0']) {
-            this.treem.rendermode.set(0);
-        }
-        if (keysPressed['1']) {
-            this.treem.rendermode.set(1);
-        }
-        if (keysPressed['2']) {
-            this.treem.rendermode.set(2);
-        }
-        if (keysPressed['3']) {
-            this.treem.rendermode.set(3);
-        }
-        if (keysPressed['4']) {
-            this.treem.rendermode.set(4);
-        }
-        if (keysPressed['5']) {
-            this.treem.rendermode.set(5);
-        }
 
-        // // draw objects
-        // for (const obj of this.gameObjects) {
-        //     obj.draw();
-        // }
+        // rendering mode for tree
+        // -------------------------------------------------------------------
+        for (let mode of [0, 1, 2, 3, 4, 5]) {
+            if (keysPressed[mode]) {
+                this.treem.rendermode.set(mode);
+            }
+        }
 
 
         // render to framebuffer
+        // -------------------------------------------------------------------
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        for (const go of this.gameObjects) {
-            go.draw(this.depthMaterial);
-        }
+        this.treeObj.draw(this.depthMaterial);
+        // for (const go of this.gameObjects) {
+        //     go.draw(this.depthMaterial);
+        // }
+
 
         // render to screen
+        // -------------------------------------------------------------------
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (keysPressed.SPACE) {
@@ -287,6 +346,7 @@ class Scene {
     }
 
     onresize(width: number, height: number): void {
+        console.log(`canvas resized to ${width} x ${height}`);
         this.camera.setAspectRatio(width / height);
     }
 

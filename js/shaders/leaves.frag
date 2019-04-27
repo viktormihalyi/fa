@@ -50,11 +50,11 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 shadow_coord = lightSpacePos*0.5+0.5;
         if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
             color *= 0.1;
-            // color = vec3(1, 0, 0);
         }
-
         fragmentColor = vec4(color, alpha);
+
         // fragmentColor = vec4(N*0.5+0.5, 1);
         // fragmentColor = vec4(1, 0, 0, 1);
+        // fragmentColor = vec4(vec3(texture(depthTexture, shadow_coord.xy).r), 1);
     }
 `;

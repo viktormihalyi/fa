@@ -2,7 +2,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     in vec3 vertexPosition;
     in vec3 vertexNormal;
     in vec2 vertexTexCoord;
-    in mat4 modelM;
+    in mat4 modelMatrix;
 
     uniform struct {
         mat4 lightSpaceMatrix;
@@ -23,10 +23,10 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     out mat3 TBN;
 
     void main(void) {
-        vec4 wPos = vec4(vertexPosition, 1) * modelM;
+        vec4 wPos = vec4(vertexPosition, 1) * modelMatrix;
 
         uv = vertexTexCoord;
-        normal   = (vec4(vertexNormal, 0) * modelM).xyz;
+        normal   = (vec4(vertexNormal, 0) * modelMatrix).xyz;
         wLight   = (camera.wLiPos.xyz * wPos.w - wPos.xyz);
         wView    = (camera.wEye * wPos.w - wPos.xyz);
         lightSpacePos = (wPos * camera.lightSpaceMatrix).xyz;

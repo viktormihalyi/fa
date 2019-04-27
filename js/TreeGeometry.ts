@@ -46,7 +46,7 @@ function u_texcoord_for_cylinder(cylinder_resolution: number, t: number): number
 }
 
 function u_texcoords_for_cylinder(n: number): number[] {
-    return new Array(n).fill(0).map((_, index) => u_texcoord_for_cylinder(6, index));
+    return new Array(n).fill(0).map((_, index) => u_texcoord_for_cylinder(6, index)); // TODO 6 -> n?
 }
 
 

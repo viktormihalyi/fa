@@ -1,5 +1,5 @@
 class PerspectiveCamera {
-    public static readonly worldUp: Vec3 = new Vec3(0, 1, 0);
+    public static readonly WORLD_UP: Vec3 = new Vec3(0, 1, 0);
 
     public position: Vec3;
     public ahead: Vec3;
@@ -31,7 +31,7 @@ class PerspectiveCamera {
         this.pitch = 0.0;
 
         this.ahead = new Vec3(-Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));
-        this.right.setVectorProduct(this.ahead, PerspectiveCamera.worldUp);
+        this.right.setVectorProduct(this.ahead, PerspectiveCamera.WORLD_UP);
         this.right.normalize();
         this.up.setVectorProduct(this.right, this.ahead);
 
@@ -57,35 +57,19 @@ class PerspectiveCamera {
     }
 
     public updateViewMatrix(): void {
-        this.viewMatrix
-            .set(
-                 this.right.x,  this.right.y,  this.right.z, 0,
-                 this.up.x,     this.up.y,     this.up.z,    0,
-                -this.ahead.x, -this.ahead.y, -this.ahead.z, 0,
-                0,              0,             0,            1
-            )
-            .translate(this.position)
-            .invert();
+        this.viewMatrix.set(lookAt(this.position, this.position.plus(this.ahead), PerspectiveCamera.WORLD_UP));
         this.viewProjMatrix.set(this.viewMatrix).mul(this.projMatrix);
     }
+
     public updateProjMatrix(): void {
-        const yScale = 1.0 / Math.tan(this.fov * 0.5);
-        const xScale = yScale / this.aspect;
-        const f = this.farPlane;
-        const n = this.nearPlane;
-
-        this.projMatrix.set(
-            xScale, 0,      0,              0,
-            0,      yScale, 0,              0,
-            0,      0,      (n+f) / (n-f), -1,
-            0,      0,      2*n*f / (n-f),  0
-        );
-
+        this.projMatrix.set(projection(this.fov, this.aspect, this.nearPlane, this.farPlane));
         this.viewProjMatrix.set(this.viewMatrix).mul(this.projMatrix);
     }
+
     public updateRayDirMatrix(): void {
         this.rayDirMatrix.set().translate(this.position).mul(this.viewMatrix).mul(this.projMatrix).invert();
     }
+
     public move(dt: number, keysPressed: any): void {
         if (this.isDragging) {
             this.yaw -= this.mouseDelta.x * this.dragSpeed;
@@ -98,7 +82,7 @@ class PerspectiveCamera {
             }
             this.mouseDelta = new Vec2(0.0, 0.0);
             this.ahead = new Vec3(-Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));
-            this.right.setVectorProduct(this.ahead, PerspectiveCamera.worldUp);
+            this.right.setVectorProduct(this.ahead, PerspectiveCamera.WORLD_UP);
             this.right.normalize();
             this.up.setVectorProduct(this.right, this.ahead);
         }
@@ -118,10 +102,10 @@ class PerspectiveCamera {
             this.position.addScaled(-this.speed * dt, this.right);
         }
         if (keysPressed.E) {
-            this.position.addScaled(this.speed * dt, PerspectiveCamera.worldUp);
+            this.position.addScaled(this.speed * dt, PerspectiveCamera.WORLD_UP);
         }
         if (keysPressed.Q) {
-            this.position.addScaled(-this.speed * dt, PerspectiveCamera.worldUp);
+            this.position.addScaled(-this.speed * dt, PerspectiveCamera.WORLD_UP);
         }
         if (keysPressed.SHIFT) {
             this.speed *= 10;
@@ -130,19 +114,23 @@ class PerspectiveCamera {
         this.updateRayDirMatrix();
         this.updateProjMatrix();
     }
+
     public setAspectRatio(ar: number): void {
         this.aspect = ar;
         this.updateProjMatrix();
     }
+
     public mouseDown(): void {
         this.isDragging = true;
         this.mouseDelta.set();
     }
+
     public mouseMove(event: MouseEvent): void {
         this.mouseDelta.x += event.movementX;
         this.mouseDelta.y += event.movementY;
         event.preventDefault();
     }
+
     public mouseUp(): void {
         this.isDragging = false;
     }
