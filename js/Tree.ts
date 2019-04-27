@@ -1,92 +1,14 @@
-// number of attraction points to generate
-const ATTRACTION_POINT_COUNT = randomBetween(100, 200);
-
-// attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(randomBetween(-25, 25), 300+randomBetween(-50, 50), randomBetween(-25, 25));
-const CIRCLE_RADIUS = randomBetween(75, 200);
-
-// space colonization algorithm constants
-const INFL_MIN_DIST = 12;
-const INFL_MAX_DIST = 150;
-const BRANCH_LENGTH = randomBetween(25, 35);
-const BRANCH_LENGTH_SCALE = 0.99;
-
-// starting tree node values
-const TREE_INITIAL_POS = new Vec3(0, 0, 0);
-const TREE_INITIAL_DIRECTION = new Vec3(0, 1, 0);
-const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
-const TREE_STARTING_WIDTH = randomBetween(10, 15);
-
-// stop grwoing after reaching this many tree nodes
-const MAX_TREE_SIZE = 250;
-
-// how much the previous growing direction should affect the next node
-// 0 - not taken into consideration
-const PREVIOUS_DIR_POWER = 0.8;
-
-// width scales with each node
-const BRANCH_WIDTH_SCALE = 0.85;
-
-
-class TreeNode {
-    public parent: TreeNode | null;
-    public children: TreeNode[];
-    public pos: Vec3;
-    public tangent: Vec3;
-    public normal: Vec3;
-    public width: number;
-    public branch_length: number;
-    public depth: number;
-
-    constructor(parent: TreeNode | null, pos: Vec3, tangent: Vec3, width: number, normal: Vec3, br = 0) {
-        this.parent = parent;
-        this.pos = pos;
-        this.tangent = tangent.clone().normalize();
-        this.width = width;
-        this.children = [];
-        this.normal = normal.clone().normalize();
-        this.branch_length = br;
-        this.depth = 0;
-    }
-
-    binormal(): Vec3 {
-        return this.tangent.cross(this.normal).normalize();
-    }
-
-    getDominantChild(): TreeNode | null {
-        let dominantChild = null;
-        let smallestAngle = Number.MAX_SAFE_INTEGER;
-        for (let child of this.children) {
-            const angle = this.tangent.dot(child.tangent);
-            if (angle < smallestAngle) {
-                smallestAngle = angle;
-                dominantChild = child;
-            }
-        }
-        return dominantChild;
-    }
-
-    clone(): TreeNode {
-        return new TreeNode(null, this.pos, this.tangent, this.width, this.normal, this.branch_length);
-    }
-
-    opposite(): TreeNode {
-        return new TreeNode(null, this.pos, this.tangent.times(-1), this.width, this.normal.times(-1), this.branch_length);
-    }
-
-    getOrientationMatrix(): Mat4 {
-        return createOrientationMatrix(this.tangent, this.normal, this.binormal());
-    }
-}
-
 // http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
 class Tree {
     public nodes: TreeNode[];
     public attractionPoints: Vec3[];
     public middleNodes: TreeNode[];
     public ending_nodes: TreeNode[];
+    private config: TreeConfig;
 
     constructor() {
+        this.config = new TreeConfig();
+
         this.nodes = [];
         this.attractionPoints = [];
         this.middleNodes = [];
@@ -95,14 +17,14 @@ class Tree {
         // setup starting tree - just one one
         this.nodes.push(new TreeNode(
             null, // parent
-            TREE_INITIAL_POS,
-            TREE_INITIAL_DIRECTION,
-            TREE_STARTING_WIDTH,
-            TREE_INITIAL_NORMAL,
-            BRANCH_LENGTH));
+            this.config.TREE_INITIAL_POS,
+            this.config.TREE_INITIAL_DIRECTION,
+            this.config.TREE_STARTING_WIDTH,
+            this.config.TREE_INITIAL_NORMAL,
+            this.config.BRANCH_LENGTH));
 
         // generate attraction points
-        while (this.attractionPoints.length < ATTRACTION_POINT_COUNT) {
+        while (this.attractionPoints.length < this.config.ATTRACTION_POINT_COUNT) {
             const rndpoint = new Vec3(
                 randomBetween(-1000, 1000),
                 randomBetween(50, 1000),
@@ -127,11 +49,11 @@ class Tree {
 
     calculate_depth(): void {
         // set v coordinates for textures
-        function recursive_set_v(root: TreeNode, n: number) {
+        const recursive_set_v = (root: TreeNode, n: number) => {
             root.depth = n;
             for (const child of root.children) {
                 const dist_to_parent = child.pos.minus(root.pos).length();
-                recursive_set_v(child, n + dist_to_parent/BRANCH_LENGTH);
+                recursive_set_v(child, n + dist_to_parent/this.config.BRANCH_LENGTH);
             }
         }
         recursive_set_v(this.nodes[0], 0);
@@ -260,12 +182,12 @@ class Tree {
     }
 
     good_point(pos: Vec3): boolean {
-        const a = CIRCLE_RADIUS*2;
-        const b = CIRCLE_RADIUS*1;
-        const c = CIRCLE_RADIUS*2;
-        return Math.pow((pos.x-CIRCLE_CENTER.x) / a, 2) +
-            Math.pow((pos.y-CIRCLE_CENTER.y) / b, 2) +
-            Math.pow((pos.z-CIRCLE_CENTER.z) / c, 2) <= 1;
+        const a = this.config.CIRCLE_RADIUS*2;
+        const b = this.config.CIRCLE_RADIUS*1;
+        const c = this.config.CIRCLE_RADIUS*2;
+        return Math.pow((pos.x-this.config.CIRCLE_CENTER.x) / a, 2) +
+            Math.pow((pos.y-this.config.CIRCLE_CENTER.y) / b, 2) +
+            Math.pow((pos.z-this.config.CIRCLE_CENTER.z) / c, 2) <= 1;
     }
 
     // keep only the attraction points which are further
@@ -280,7 +202,7 @@ class Tree {
                     closestDist = dist;
                 }
             }
-            return closestDist >= INFL_MIN_DIST;
+            return closestDist >= this.config.INFL_MIN_DIST;
         });
     }
 
@@ -343,9 +265,9 @@ class Tree {
             source,
             source.pos.plus(direction.times(source.branch_length)),
             direction,
-            source.width*BRANCH_WIDTH_SCALE,//*Math.pow(angle, 0.0),
+            source.width*this.config.BRANCH_WIDTH_SCALE,//*Math.pow(angle, 0.0),
             principal_normal,
-            source.branch_length * BRANCH_LENGTH_SCALE);
+            source.branch_length * this.config.BRANCH_LENGTH_SCALE);
 
         // TODO fix growing on the same position?
         for (const n of this.nodes) {
@@ -365,7 +287,7 @@ class Tree {
 
     private add_ends(): void {
         for (const node of this.nodes.filter(n => n.children.length === 0)) {
-            const ending_node_pos = node.pos.plus(node.tangent.times(BRANCH_LENGTH*0.05));
+            const ending_node_pos = node.pos.plus(node.tangent.times(this.config.BRANCH_LENGTH*0.05));
             const endingNode = new TreeNode(node, ending_node_pos, node.tangent, node.width/2, node.normal, node.branch_length/2);
             node.children.push(endingNode);
             this.nodes.push(endingNode);
@@ -374,7 +296,7 @@ class Tree {
     }
 
     private grow(): void {
-        if (this.attractionPoints.length === 0 || this.nodes.length >= MAX_TREE_SIZE) {
+        if (this.attractionPoints.length === 0 || this.nodes.length >= this.config.MAX_TREE_SIZE) {
             return;
         }
 
@@ -390,7 +312,7 @@ class Tree {
 
             for (let treeNode of this.nodes) {
                 let dist = this.dist_to_node(apoint, treeNode);
-                if (dist < closestDist && INFL_MIN_DIST < dist && dist < INFL_MAX_DIST) {
+                if (dist < closestDist && this.config.INFL_MIN_DIST < dist && dist < this.config.INFL_MAX_DIST) {
                     closest = treeNode;
                     closestDist = dist;
                 }
@@ -430,7 +352,7 @@ class Tree {
                 }
                 sumVect.normalize();
                 // also include the previous direction
-                sumVect.add(inflNode.node.tangent.times(PREVIOUS_DIR_POWER));
+                sumVect.add(inflNode.node.tangent.times(this.config.PREVIOUS_DIR_POWER));
                 sumVect.normalize();
 
                 // add node
