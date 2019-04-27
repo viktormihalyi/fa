@@ -24,6 +24,9 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     }
 
     in vec4 worldPos;
+    in vec3 lightSpacePos;
+
+    uniform sampler2D depthTexture;
 
     float fun(float x) {
         if (x < 0.33) {
@@ -53,9 +56,14 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         vec3 nsc2 = vec3(1, 0.2, 1);
         float t = snoise(worldPos3*nsc3, 16);
         t = t > 0.5 ? 1.0 : 0.0;
-        // t += snoise(worldPos3*0.5*nsc33, 32) > 0.55 ? 0.6 : 0.0;
-        fragmentColor = vec4(mix(mix(wood_brown, dark_brown, snoise(worldPos3*nsc2*2.0, 16)), mix(light_brown, more_brown, fun(t)), 0.6), 1);
 
-        // fragmentColor = vec4(t, t, t, 1);
+        vec3 color = mix(mix(wood_brown, dark_brown, snoise(worldPos3*nsc2*2.0, 16)), mix(light_brown, more_brown, fun(t)), 0.6);
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
+            color *= 0.1;
+            // color = vec3(1, 0, 0);
+        }
+
+        fragmentColor = vec4(color, 1);
     }
 `;
