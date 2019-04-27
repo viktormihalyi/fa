@@ -1,5 +1,6 @@
 class Shader {
-    public static sourcePathURL: string = (<HTMLScriptElement>document.currentScript).src.split('Shader.js')[0] + 'shaders/';
+    public static readonly shaderDirectory: string = 'js/shaders/';
+    public static readonly sourcePathURL: string = (<HTMLScriptElement>document.currentScript).src.split('Shader.js')[0] + 'shaders/';
     public static source: any = {};
 
     public glShader: WebGLShader;

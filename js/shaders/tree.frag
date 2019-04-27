@@ -1,4 +1,4 @@
-Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 300 es
+Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#version 300 es
     precision highp float;
 
     uniform sampler2D treeTexture;
@@ -25,6 +25,10 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     in mat3 TBN;
 
     out vec4 fragmentColor;
+
+    uniform struct {
+        float strength;
+    } shadow;
 
     float snoise(vec3 r) {
         vec3 s = vec3(7502, 22777, 4767);
@@ -88,12 +92,11 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
         float nh = max(dot(N, H), 0.0);
 
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.75);
-        color *= distance(modelPosition, vec3(0, 200, 0)) / 120.0;
+        // color *= clamp(distance(modelPosition, vec3(0, 200, 0)) / 120.0, 0.33, 1.0);
 
         vec3 shadow_coord = lightSpacePos*0.5+0.5;
         if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
-            color *= 0.1;
-            // color = vec3(1, 0, 0);
+            color *= shadow.strength;
         }
 
         fragmentColor = vec4(color, 1);

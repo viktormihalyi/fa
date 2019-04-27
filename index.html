@@ -13,8 +13,13 @@
         <canvas id="canvas"></canvas>
         <div id="overlay">
             <div id="status"></div>
+            moss:
             <input type="range" min="-0.5" max="2.5" value="1.75" step="0.02" class="slider"
                 oninput="app.scene.treem.mossyness.set(this.value);console.log(this.value);">
+            <br>
+            shadow:
+            <input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider"
+                oninput="Uniforms.shadow.strength.set(1-this.value);console.log(this.value);">
         </div>
     </div>
 
@@ -65,8 +70,8 @@
     <script src="js/shaders/frenet.vert"></script>
     <script src="js/shaders/frenet.frag"></script>
 
-    <script src="js/shaders/quad.vert"></script>
-    <script src="js/shaders/quad.frag"></script>
+    <script src="js/shaders/ground.vert"></script>
+    <script src="js/shaders/ground.frag"></script>
 
     <script src="js/shaders/twig.vert"></script>
     <script src="js/shaders/twig.frag"></script>
@@ -74,6 +79,7 @@
     <script src="js/shaders/depth.vert"></script>
     <script src="js/shaders/depth_instanced.vert"></script>
     <script src="js/shaders/depth.frag"></script>
+    <script src="js/shaders/depth_leaves.frag"></script>
 
     <script src="js/shaders/fquad.vert"></script>
     <script src="js/shaders/fquad.frag"></script>

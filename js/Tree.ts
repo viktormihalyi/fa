@@ -118,7 +118,7 @@ class Tree {
         for (let i = 0; i < 100; i++) {
             this.grow();
         }
-        // this.spline(1);
+        this.spline(1);
         // this.remove_intersecting_nodes(0.8);
         this.add_ends();
         this.calculate_depth();

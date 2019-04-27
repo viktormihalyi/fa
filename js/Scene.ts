@@ -47,17 +47,21 @@ class Scene {
 
     // shaders
     private depthShader?: Program;
+    private instancedDepthShader?: Program;
+    private leavesDepthShader?: Program;
+
     private treeShader?: Program;
     private leavesShader?: Program;
     private fquadShader?: Program;
     private frenetShader?: Program;
     private twigShader?: Program;
-    private instancedDepthShader?: Program;
+    private groundShader?: Program;
 
     // materials
     private depthMaterial: Material;
     private intancedDepthMaterial: Material;
     public treem: Material;
+    leavesDepthMaterial: Material;
 
     initShaders() {
         console.log('compiling and linking shaders');
@@ -69,6 +73,12 @@ class Scene {
 
         this.instancedDepthShader = Program.from(gl, 'depth_instanced.vert', 'depth.frag', [
             { position: 0, name: 'vertexPosition' },
+            { position: 3, name: 'modelMatrix' },
+        ]);
+
+        this.leavesDepthShader = Program.from(gl, 'depth_instanced.vert', 'depth_leaves.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 2, name: 'vertexTexCoord' },
             { position: 3, name: 'modelMatrix' },
         ]);
 
@@ -102,6 +112,10 @@ class Scene {
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
             { position: 3, name: 'modelMatrix' },
+        ]);
+
+        this.groundShader = Program.from(gl, 'ground.vert', 'ground.frag', [
+            { position: 0, name: 'vertexPosition' }
         ]);
     }
 
@@ -148,6 +162,7 @@ class Scene {
 
         this.depthMaterial = new Material(gl, this.depthShader!);
         this.intancedDepthMaterial = new Material(gl, this.instancedDepthShader!);
+        this.leavesDepthMaterial = new Material(gl, this.leavesDepthShader!);
 
 
         // tree
@@ -172,7 +187,7 @@ class Scene {
         this.treem.rendermode.set(0);
         console.log(treeMaterial);
 
-        const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial));
+        const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial, this.depthMaterial));
 
 
         // leaves
@@ -180,13 +195,15 @@ class Scene {
         console.log('creating leaves');
         const leafMaterial = new Material(gl, this.leavesShader!);
         leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
-        leafMaterial.leaves_alpha.set(new Texture2D(gl, `media/leaf01_alpha.jpg`));
+        const leaves_alpha_texture = new Texture2D(gl, `media/leaf01_alpha.jpg`);
+        this.leavesDepthMaterial.leaves_alpha.set(leaves_alpha_texture);
+        leafMaterial.leaves_alpha.set(leaves_alpha_texture);
         leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
         leafMaterial.depthTexture.set(this.depthTexture);
 
         const quadGeometry = new QuadGeometry(gl);
         const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);
-        const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial), false);
+        const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial, this.leavesDepthMaterial));
 
 
         // fullscreen quad
@@ -203,7 +220,7 @@ class Scene {
         const frenetMaterial = new Material(gl, this.frenetShader!);
         const frenetGeometry = new FrenetGeometry(gl);
         frenetGeometry.setPoints(tree);
-        const frenetFrames = new GameObject(new Mesh(frenetGeometry, frenetMaterial));
+        const frenetFrames = new GameObject(new Mesh(frenetGeometry, frenetMaterial, this.depthMaterial));
 
 
         // twigs
@@ -213,6 +230,7 @@ class Scene {
         twigMaterial.depthTexture.set(this.depthTexture);
         const twigs = new InstancedGeometry(gl, new TwigGeometry(gl), 3, false);
         twigs.setModelMatrices([new Mat4().scale(new Vec3(1, 0.07, 1))]);
+        const twigsObject = new GameObject(new Mesh(twigs, twigMaterial, this.intancedDepthMaterial));
 
 
         // twig modelmatrices
@@ -254,23 +272,24 @@ class Scene {
 
         this.treeObj = treeObject;
 
-        // fal
-        const falShader = Program.from(gl, 'quad.vert', 'quad.frag', [
-            { position: 0, name: 'vertexPosition' }
-        ]);
-        const falMaterial = new Material(gl, falShader);
-        falMaterial.depthTexture.set(this.depthTexture);
-        const fal = new GameObject(new Mesh(quadGeometry, falMaterial));
-        fal.scale.set(200, 200, 200);
-        fal.position = new Vec3(0, 200, -200);
+        // ground
+        // -------------------------------------------------------------------
+        const groundMaterial = new Material(gl, this.groundShader!);
+        groundMaterial.depthTexture.set(this.depthTexture);
+        const ground = new GameObject(new Mesh(quadGeometry, groundMaterial, this.depthMaterial));
+        const ground_scale = 10000;
+        ground.scale.set(ground_scale, ground_scale, ground_scale);
+        ground.orientationVector.set(1, 0, 0);
+        ground.orientation = rad(90);
+        ground.position.set(0, 0, 0);
 
         // game objects
         // -------------------------------------------------------------------
         this.gameObjects = [];
-        this.gameObjects.push(fal);
+        this.gameObjects.push(ground);
         this.gameObjects.push(treeObject);
         this.gameObjects.push(leavesObject);
-        this.gameObjects.push(new GameObject(new Mesh(twigs, twigMaterial), true));
+        this.gameObjects.push(twigsObject);
         // this.gameObjects.push(frenetFrames);
 
 
@@ -279,9 +298,11 @@ class Scene {
         this.camera = new PerspectiveCamera();
         this.lightPos = new Vec3();
         this.lightLookat = new Vec3(0, 100, 0);
+        Uniforms.shadow.strength.set(0.6);
     }
 
     update(gl: WebGL2RenderingContext, keysPressed: any): void {
+        gl.clearDepth(1.0);
         // time
         // -------------------------------------------------------------------
         const timeAtThisFrame = new Date().getTime();
@@ -293,33 +314,21 @@ class Scene {
         // update camera
         // -------------------------------------------------------------------
         this.camera.move(dt, keysPressed);
-
-
-        // set camera uniforms
-        // -------------------------------------------------------------------
         Uniforms.camera.viewProj.set(this.camera.viewProjMatrix);
         Uniforms.camera.wEye.set(this.camera.position);
 
 
-        // set light uniforms
+        // update light
         // -------------------------------------------------------------------
-        this.lightPos.set(Math.cos(t/2)*300, 100, Math.sin(t/2)*300);
+        this.lightPos.set(Math.cos(t/2)*100, 500, Math.sin(t/2)*100);
         Uniforms.camera.wLiPos.set(this.lightPos);
 
         const lightView = lookAt(this.lightPos, this.lightLookat, PerspectiveCamera.WORLD_UP);
-        const lightProjection = ortho(-300, 300, -300, 300, 1, 750);
-
-        // const lightProjection = projection(1, 1, 10, 1000);
+        const lightProjection = ortho(-300, 300, -300, 300, 1, 1000);
 
         Uniforms.camera.lightSpaceMatrix
             .set(lightView)
             .mul(lightProjection);
-
-        // if (keysPressed.SPACE) {
-        //     Uniforms.camera.lightSpaceMatrix.set(this.camera.viewProjMatrix);
-        //     this.camera.position.set(Uniforms.camera.wLiPos);
-        // }
-
 
 
         // rendering mode for tree
@@ -330,23 +339,18 @@ class Scene {
             }
         }
 
-        const render_all = true;
+        const render_tree_only = false;
 
         // render to framebuffer
         // -------------------------------------------------------------------
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        this.treeObj.draw(this.depthMaterial);
-        if (render_all) {
+        if (!render_tree_only) {
             for (const go of this.gameObjects) {
-                if (go.isInstaced) {
-                    go.draw(this.intancedDepthMaterial);
-                } else {
-                    go.draw(this.depthMaterial);
-                }
+                go.draw(true);
             }
         } else {
-            this.treeObj.draw();
+            this.treeObj.draw(true);
         }
 
 
@@ -357,7 +361,7 @@ class Scene {
         if (keysPressed.SPACE) {
             this.fullScreenQuad.draw();
         } else {
-            if (render_all) {
+            if (!render_tree_only) {
                 for (const go of this.gameObjects) {
                     go.draw();
                 }

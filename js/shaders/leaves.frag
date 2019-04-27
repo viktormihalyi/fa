@@ -1,4 +1,4 @@
-Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 300 es
+Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#version 300 es
     precision highp float;
 
     in vec2 uv;
@@ -16,6 +16,10 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
     uniform sampler2D leaves_alpha;
     uniform sampler2D leaves_translucency;
     uniform sampler2D depthTexture;
+
+    uniform struct {
+        float strength;
+    } shadow;
 
     void main(void) {
         float alpha = texture(leaves_alpha, uv).r;
@@ -49,7 +53,7 @@ Shader.source[document.currentScript.src.split('js/shaders/')[1]] = `#version 30
 
         vec3 shadow_coord = lightSpacePos*0.5+0.5;
         if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
-            color *= 0.1;
+            color *= shadow.strength;
         }
         fragmentColor = vec4(color, alpha);
 

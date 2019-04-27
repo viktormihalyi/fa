@@ -1,15 +1,17 @@
 class Mesh {
-    public geometry: IGeometry;
-    public material: Material;
+    private geometry: IGeometry;
+    private material: Material;
+    private depthMaterial?: Material;
 
-    constructor(geometry: IGeometry, material: Material) {
+    constructor(geometry: IGeometry, material: Material, depthMaterial?: Material) {
         this.geometry = geometry;
         this.material = material;
+        this.depthMaterial = depthMaterial;
     }
 
-    draw(other_material?: Material): void {
-        if (other_material) {
-            other_material.commit();
+    draw(depth: boolean): void {
+        if (depth && this.depthMaterial) {
+            this.depthMaterial.commit();
         } else {
             this.material.commit();
         }
