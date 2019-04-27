@@ -7,6 +7,8 @@ const SKIP_CYLINDER_AT_BIFURCATION = false;
 
 const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 
+const INDEX_VERTICES = false;
+
 // https://math.stackexchange.com/questions/73237/parametric-equation-of-a-circle-in-3d-space/73242#73242
 // circle in 3d
 // params:
@@ -52,20 +54,22 @@ function u_texcoords_for_cylinder(n: number): number[] {
 
 class TreeGeometry implements IGeometry {
     public gl: WebGL2RenderingContext;
-    public vao: WebGLVertexArrayObject;
-    public vertexBuffer: WebGLBuffer;
-    public normalBuffer: WebGLBuffer;
-    public textureCoordBuffer: WebGLBuffer;
-    public tangents: WebGLBuffer;
-    public bitangents: WebGLBuffer;
-    public branchWidth: WebGLBuffer;
-    public indexBuffer: WebGLBuffer;
-    public index_count: number;
+    private vao: WebGLVertexArrayObject;
+    private vertexBuffer: WebGLBuffer;
+    private normalBuffer: WebGLBuffer;
+    private textureCoordBuffer: WebGLBuffer;
+    private tangents: WebGLBuffer;
+    private bitangents: WebGLBuffer;
+    private branchWidth: WebGLBuffer;
+    private indexBuffer: WebGLBuffer;
+    private index_count: number;
+    private vertex_count: number;
 
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
 
         this.index_count = 0;
+        this.vertex_count = 0;
 
         this.vao = gl.createVertexArray()!;
         gl.bindVertexArray(this.vao);
@@ -144,14 +148,14 @@ class TreeGeometry implements IGeometry {
                     const u_next = texture_coordinates[nextidx];
 
                     // triangle 1
-                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth)));
-                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth)));
-                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth)));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth), child.tangent, child.binormal()));
+                    raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth), node.tangent, node.binormal()));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth), node.tangent, node.binormal()));
 
                     // triangle 2
-                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth)));
-                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth)));
-                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u_next, child.depth)));
+                    raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth), child.tangent, child.binormal()));
+                    raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth), node.tangent, node.binormal()));
+                    raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u_next, child.depth), child.tangent, child.binormal()));
                 }
             }
         }
@@ -161,124 +165,126 @@ class TreeGeometry implements IGeometry {
             const node_points = getCirclePointsForNode(node);
             for (let i = 0; i < CIRCLE_RES; i++) {
                 const nextidx = (i+1) % CIRCLE_RES;
-                raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1)));
-                raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1)));
-                raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1)));
+                raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1), node.tangent, node.binormal()));
+                raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1), node.tangent, node.binormal()));
+                raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1), node.tangent, node.binormal()));
             }
         }
 
+        let unique_vertices: VertexData[] = [];
 
-        // this.vertex_ccount = raw_vertex_data.length;
-
-        const unique_vertices: VertexData[] = [];
         const index_buffer: number[] = [];
+        if (INDEX_VERTICES) {
+            const MAX_DIST_DIFF = 0.1;
+            console.log(`CIRLCE_RES = ${CIRCLE_RES}`);
+            console.log(`vertices count: ${raw_vertex_data.length}, running vertex indexer...`);
 
-        const MAX_DIST_DIFF = 0.1;
-        console.log(`CIRLCE_RES = ${CIRCLE_RES}`);
-        console.log(`vertices count: ${raw_vertex_data.length}, running vertex indexer...`);
+            // calculate distance here
+            const tmp = new Vec3();
 
-        // calculate distance here
-        const tmp = new Vec3();
+            // track progress
+            let i = 0;
+            let last_perc = -1;
 
-        // track progress
-        let i = 0;
-        let last_perc = -1;
-
-        const index_start_time = new Date().getTime();
-        // index vertices
-        for (const vd of raw_vertex_data) {
-            const done_percentage = Math.round(i++ / raw_vertex_data.length * 100);
-            if (last_perc != done_percentage && done_percentage % 10 === 0) {
-                console.log(`${done_percentage}%`);
-                last_perc = done_percentage;
-            }
-
-            let is_new_vertex = true;
-
-            for (let i = unique_vertices.length - 1; i >= 0; i--) {
-                if (tmp.setDifference(vd.position, unique_vertices[i].position).length2() < MAX_DIST_DIFF) {
-                    index_buffer.push(i);
-                    is_new_vertex = false;
-                    break;
+            const index_start_time = new Date().getTime();
+            // index vertices
+            for (const vd of raw_vertex_data) {
+                const done_percentage = Math.round(i++ / raw_vertex_data.length * 100);
+                if (last_perc != done_percentage && done_percentage % 10 === 0) {
+                    console.log(`${done_percentage}%`);
+                    last_perc = done_percentage;
                 }
-            }
-            if (is_new_vertex) {
-                unique_vertices.push(vd);
-                index_buffer.push(unique_vertices.length-1);
-            }
-        }
-        const index_end_time = new Date().getTime();
-        console.log(`done (took ${index_end_time - index_start_time} ms), unique vertex count: ${unique_vertices.length}, index buffer size: ${index_buffer.length}`);
 
-        // this.vertex_ccount = unique_vertices.length;
-        this.index_count = index_buffer.length;
+                let is_new_vertex = true;
 
-        console.log('normals, tangents, bitangents...');
-
-        // average normals, find tangents and bitangents
-        for (let i = 0; i < unique_vertices.length; i++) {
-            // all triangles with the current vertex
-            const triangleIndices: [number, number, number][] = [];
-            // triangleIndices = [[vertex_idx1, vertex_idx2, vertex_idx3], ...]
-
-            for (let j = 0; j < index_buffer.length; j++) {
-                if (index_buffer[j] === i) {
-                    if (j % 3 === 0) {
-                        triangleIndices.push([index_buffer[j+0], index_buffer[j+1], index_buffer[j+2]]);
-                    } else if (j % 3 === 1) {
-                        triangleIndices.push([index_buffer[j-1], index_buffer[j+0], index_buffer[j+1]]);
-                    } else if (j % 3 === 2) {
-                        triangleIndices.push([index_buffer[j-2], index_buffer[j-1], index_buffer[j+0]]);
+                for (let i = unique_vertices.length - 1; i >= 0; i--) {
+                    if (tmp.setDifference(vd.position, unique_vertices[i].position).length2() < MAX_DIST_DIFF) {
+                        index_buffer.push(i);
+                        is_new_vertex = false;
+                        break;
                     }
                 }
+                if (is_new_vertex) {
+                    unique_vertices.push(vd);
+                    index_buffer.push(unique_vertices.length-1);
+                }
             }
+            const index_end_time = new Date().getTime();
+            console.log(`done (took ${index_end_time - index_start_time} ms), unique vertex count: ${unique_vertices.length}, index buffer size: ${index_buffer.length}`);
 
-            const triangles = triangleIndices.map(t => [unique_vertices[t[0]], unique_vertices[t[1]], unique_vertices[t[2]]]);
-            // triangles = [[vertex1, vertex2, vertex3], [vertex1, vertex2, vertex3], ...]
+            this.index_count = index_buffer.length;
+            console.log('normals, tangents, bitangents...');
 
-            // recalculate normals
-            const avgNormal = new Vec3();
-            for (const t of triangles) {
-                avgNormal.add(normalVectorForTriangle(t[0].position, t[1].position, t[2].position));
+            // average normals, find tangents and bitangents
+            for (let i = 0; i < unique_vertices.length; i++) {
+                // all triangles with the current vertex
+                const triangleIndices: [number, number, number][] = [];
+                // triangleIndices = [[vertex_idx1, vertex_idx2, vertex_idx3], ...]
+
+                for (let j = 0; j < index_buffer.length; j++) {
+                    if (index_buffer[j] === i) {
+                        if (j % 3 === 0) {
+                            triangleIndices.push([index_buffer[j+0], index_buffer[j+1], index_buffer[j+2]]);
+                        } else if (j % 3 === 1) {
+                            triangleIndices.push([index_buffer[j-1], index_buffer[j+0], index_buffer[j+1]]);
+                        } else if (j % 3 === 2) {
+                            triangleIndices.push([index_buffer[j-2], index_buffer[j-1], index_buffer[j+0]]);
+                        }
+                    }
+                }
+
+                const triangles = triangleIndices.map(t => [unique_vertices[t[0]], unique_vertices[t[1]], unique_vertices[t[2]]]);
+                // triangles = [[vertex1, vertex2, vertex3], [vertex1, vertex2, vertex3], ...]
+
+                // recalculate normals
+                const avgNormal = new Vec3();
+                for (const t of triangles) {
+                    avgNormal.add(normalVectorForTriangle(t[0].position, t[1].position, t[2].position));
+                }
+                avgNormal.normalize();
+                unique_vertices[i].normal = avgNormal;
+
+
+                // calculate tangents, bitangents
+
+                const avgTangent = new Vec3();
+                const avgBitangent = new Vec3();
+
+                for (const t_idx of triangleIndices) {
+                    const v0 = unique_vertices[t_idx[0]].position;
+                    const v1 = unique_vertices[t_idx[1]].position;
+                    const v2 = unique_vertices[t_idx[2]].position;
+
+                    const uv0 = unique_vertices[t_idx[0]].uv;
+                    const uv1 = unique_vertices[t_idx[1]].uv;
+                    const uv2 = unique_vertices[t_idx[2]].uv;
+
+                    const edge1 = v1.minus(v0);
+                    const edge2 = v2.minus(v0);
+
+                    const deltaUV1 = uv1.minus(uv0);
+                    const deltaUV2 = uv2.minus(uv0);
+
+                    const r = 1.0 / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+                    const tangent   = (edge1.times(deltaUV2.y).minus(edge2.times(deltaUV1.y))).times(r).normalize();
+                    const bitangent = (edge2.times(deltaUV1.x).minus(edge1.times(deltaUV2.x))).times(r).normalize();
+
+                    avgTangent.add(tangent);
+                    avgBitangent.add(bitangent);
+                }
+                avgTangent.normalize();
+                avgBitangent.normalize();
+
+                unique_vertices[i].tangent = avgTangent;
+                unique_vertices[i].bitangent = avgBitangent;
             }
-            avgNormal.normalize();
-            unique_vertices[i].normal = avgNormal;
-
-
-            // calculate tangents, bitangents
-
-            const avgTangent = new Vec3();
-            const avgBitangent = new Vec3();
-
-            for (const t_idx of triangleIndices) {
-                const v0 = unique_vertices[t_idx[0]].position;
-                const v1 = unique_vertices[t_idx[1]].position;
-                const v2 = unique_vertices[t_idx[2]].position;
-
-                const uv0 = unique_vertices[t_idx[0]].uv;
-                const uv1 = unique_vertices[t_idx[1]].uv;
-                const uv2 = unique_vertices[t_idx[2]].uv;
-
-                const edge1 = v1.minus(v0);
-                const edge2 = v2.minus(v0);
-
-                const deltaUV1 = uv1.minus(uv0);
-                const deltaUV2 = uv2.minus(uv0);
-
-                const r = 1.0 / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-                const tangent   = (edge1.times(deltaUV2.y).minus(edge2.times(deltaUV1.y))).times(r).normalize();
-                const bitangent = (edge2.times(deltaUV1.x).minus(edge1.times(deltaUV2.x))).times(r).normalize();
-
-                avgTangent.add(tangent);
-                avgBitangent.add(bitangent);
-            }
-            avgTangent.normalize();
-            avgBitangent.normalize();
-
-            unique_vertices[i].tangent = avgTangent;
-            unique_vertices[i].bitangent = avgBitangent;
+            console.log('done');
         }
-        console.log('done');
+
+        if (!INDEX_VERTICES) {
+            unique_vertices = raw_vertex_data;
+            this.vertex_count = raw_vertex_data.length;
+        }
 
         gl.bindVertexArray(this.vao);
 
@@ -291,29 +297,29 @@ class TreeGeometry implements IGeometry {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vec2ArrayToFloat32Array(unique_vertices.map(vd => vd.uv)), gl.STATIC_DRAW);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(index_buffer), gl.STATIC_DRAW);
-
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.tangents);
         gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(unique_vertices.map(vd => vd.tangent)), gl.STATIC_DRAW);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bitangents);
         gl.bufferData(gl.ARRAY_BUFFER, vec3ArrayToFloat32Array(unique_vertices.map(vd => vd.bitangent)), gl.STATIC_DRAW);
+
+        if (INDEX_VERTICES) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(index_buffer), gl.STATIC_DRAW);
+            this.index_count = index_buffer.length;
+        }
     }
 
-    draw(): void {
+    public draw(): void {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
-        if (false) {
-            gl.drawElements(gl.LINES, this.index_count, gl.UNSIGNED_SHORT, 0);
-        } else {
+        if (INDEX_VERTICES) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
             gl.drawElements(gl.TRIANGLES, this.index_count, gl.UNSIGNED_SHORT, 0);
+        } else {
+            gl.drawArrays(gl.TRIANGLES, 0, this.vertex_count);
         }
-        gl.bindVertexArray(null);
     }
 }
 

@@ -7,6 +7,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
     in vec3 lightSpacePos;
 
     uniform sampler2D depthTexture;
+
     uniform struct {
         float strength;
     } shadow;
@@ -21,15 +22,33 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         return f / 32.0 + 0.5;
     }
 
-    void main(void) {
-        float t = snoise((worldPos.xyz / worldPos.w)/10.0);
+    float shadow_percentage(sampler2D shadowMap, vec3 lightSpacePos) {
+        int shadow_count = 0;
 
-        vec3 color = mix(vec3(86,125,70)/255.0, vec3(34,139,34)/255.0*0.9, t);
+        float bias = 0.005;
 
         vec3 shadow_coord = lightSpacePos*0.5+0.5;
-        if (/*shadow_coord.z < 0.59 && */ texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
-            color *= shadow.strength;
+        vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
+
+        // 3x3
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+                float pcfDepth = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
+                if (pcfDepth < shadow_coord.z - bias) {
+                    shadow_count++;
+                }
+            }
         }
+
+        return float(shadow_count) / 9.0;
+    }
+
+    void main(void) {
+        float noise = snoise((worldPos.xyz / worldPos.w)/10.0);
+
+        vec3 color = mix(vec3(86,125,70)/255.0, vec3(34,139,34)/255.0, noise);
+
+        color *= 1.0-shadow_percentage(depthTexture, lightSpacePos)*shadow.strength;
 
         fragmentColor = vec4(color, 1);
     }

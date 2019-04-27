@@ -1,21 +1,21 @@
 // number of attraction points to generate
-const ATTRACTION_POINT_COUNT = 250*6;
+const ATTRACTION_POINT_COUNT = randomBetween(100, 200);
 
 // attraction points generation around a circle
-const CIRCLE_CENTER = new Vec3(0, 300, 0);
-const CIRCLE_RADIUS = 120;
+const CIRCLE_CENTER = new Vec3(randomBetween(-25, 25), 300+randomBetween(-50, 50), randomBetween(-25, 25));
+const CIRCLE_RADIUS = randomBetween(75, 200);
 
 // space colonization algorithm constants
 const INFL_MIN_DIST = 12;
 const INFL_MAX_DIST = 150;
-const BRANCH_LENGTH = 30;
+const BRANCH_LENGTH = randomBetween(25, 35);
 const BRANCH_LENGTH_SCALE = 0.99;
 
 // starting tree node values
 const TREE_INITIAL_POS = new Vec3(0, 0, 0);
 const TREE_INITIAL_DIRECTION = new Vec3(0, 1, 0);
 const TREE_INITIAL_NORMAL = new Vec3(0, 0, 1);
-const TREE_STARTING_WIDTH = 12;
+const TREE_STARTING_WIDTH = randomBetween(10, 15);
 
 // stop grwoing after reaching this many tree nodes
 const MAX_TREE_SIZE = 250;
@@ -25,7 +25,7 @@ const MAX_TREE_SIZE = 250;
 const PREVIOUS_DIR_POWER = 0.8;
 
 // width scales with each node
-const BRANCH_WIDTH_SCALE = 0.82;
+const BRANCH_WIDTH_SCALE = 0.85;
 
 
 class TreeNode {
@@ -118,6 +118,7 @@ class Tree {
         for (let i = 0; i < 100; i++) {
             this.grow();
         }
+        console.log(`growing for 100 resulted in ${this.nodes.length} nodes`);
         this.spline(1);
         // this.remove_intersecting_nodes(0.8);
         this.add_ends();
@@ -342,13 +343,14 @@ class Tree {
             source,
             source.pos.plus(direction.times(source.branch_length)),
             direction,
-            source.width*BRANCH_WIDTH_SCALE*Math.pow(angle, 0.0),
+            source.width*BRANCH_WIDTH_SCALE,//*Math.pow(angle, 0.0),
             principal_normal,
             source.branch_length * BRANCH_LENGTH_SCALE);
 
         // TODO fix growing on the same position?
         for (const n of this.nodes) {
-            if (n.pos.minus(newNode.pos).length() < 0.1) {
+            if (n.pos.minus(newNode.pos).length() < 0.01) {
+                console.log('wtf')
                 return;
             }
         }
@@ -357,11 +359,11 @@ class Tree {
         this.nodes.push(newNode);
     }
 
-    dist_to_node(pos: Vec3, node: TreeNode): number {
+    private dist_to_node(pos: Vec3, node: TreeNode): number {
         return node.pos.minus(pos).length();
     }
 
-    add_ends(): void {
+    private add_ends(): void {
         for (const node of this.nodes.filter(n => n.children.length === 0)) {
             const ending_node_pos = node.pos.plus(node.tangent.times(BRANCH_LENGTH*0.05));
             const endingNode = new TreeNode(node, ending_node_pos, node.tangent, node.width/2, node.normal, node.branch_length/2);
@@ -371,7 +373,7 @@ class Tree {
         }
     }
 
-    grow(): void {
+    private grow(): void {
         if (this.attractionPoints.length === 0 || this.nodes.length >= MAX_TREE_SIZE) {
             return;
         }

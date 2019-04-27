@@ -7,11 +7,12 @@ class InstancedGeometry implements IGeometry {
 
 
     constructor(gl: WebGL2RenderingContext, geometry: IGeometry, start_modelm_vertex_attrib: number, usesIndexArray: boolean) {
-        assert(geometry.vertexCount !== undefined, 'no vertexCount on geometry');
-        assert(geometry.inputLayout !== undefined, 'no inputLayout on geometry');
-
-        if (usesIndexArray)
-        assert(geometry.indexBuffer !== undefined, 'no indexBuffer on geometry');
+        if (usesIndexArray) {
+            assert(geometry.indexBuffer !== undefined, 'no indexBuffer on geometry');
+        } else {
+            assert(geometry.vertexCount !== undefined, 'no vertexCount on geometry');
+            assert(geometry.inputLayout !== undefined, 'no inputLayout on geometry');
+        }
 
         this.gl = gl;
         this.geometry = geometry;
@@ -69,10 +70,10 @@ class InstancedGeometry implements IGeometry {
 
         const gl = this.gl;
         gl.bindVertexArray(this.geometry.inputLayout);
+
         if (this.usesIndexArray) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.geometry.indexBuffer);
             gl.drawElementsInstanced(gl.TRIANGLES, this.geometry.vertexCount, gl.UNSIGNED_SHORT, 0, this.instanceCount);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         } else {
             // ???
             gl.drawArraysInstanced(gl.TRIANGLES, 0, this.geometry.vertexCount, this.instanceCount);

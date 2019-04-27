@@ -21,6 +21,28 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         float strength;
     } shadow;
 
+
+    float shadow_percentage(sampler2D shadowMap, vec3 lightSpacePos) {
+        int shadow_count = 0;
+
+        float bias = 0.005;
+
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
+
+        // 3x3
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+                float pcfDepth = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
+                if (pcfDepth < shadow_coord.z - bias) {
+                    shadow_count++;
+                }
+            }
+        }
+
+        return float(shadow_count) / 9.0;
+    }
+
     void main(void) {
         float alpha = texture(leaves_alpha, uv).r;
         if (alpha < 0.95) {
@@ -49,12 +71,9 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
         vec3 m = translucency*1.0 + vec3(255,192,203)/255.0*0.0;
         vec3 color = m;// * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
-        color *= distance(worldPos, vec3(0, 200, 0)) / 120.0;
+        // color *= distance(worldPos, vec3(0, 200, 0)) / 200.0;
+        color *= 1.0-shadow_percentage(depthTexture, lightSpacePos)*shadow.strength;
 
-        vec3 shadow_coord = lightSpacePos*0.5+0.5;
-        if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
-            color *= shadow.strength;
-        }
         fragmentColor = vec4(color, alpha);
 
         // fragmentColor = vec4(N*0.5+0.5, 1);

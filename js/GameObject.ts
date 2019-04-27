@@ -22,9 +22,11 @@ class GameObject {
             .translate(this.position);
     }
 
-    draw(depth: boolean = false): void {
-        this.updateModelMatrix();
-        Uniforms.camera.modelMatrix.set(this.modelMatrix);
+    draw(depth: boolean = false, updateMatrix: boolean = true): void {
+        if (updateMatrix) {
+            this.updateModelMatrix();
+            Uniforms.camera.modelMatrix.set(this.modelMatrix);
+        }
         this.mesh.draw(depth);
     }
 }

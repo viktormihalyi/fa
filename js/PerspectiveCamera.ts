@@ -22,7 +22,7 @@ class PerspectiveCamera {
 
 
     constructor() {
-        this.position = new Vec3(-300.0, 200.0, 0.0);
+        this.position = new Vec3(-400.0, 250.0, 0.0);
         this.ahead = new Vec3(1.0, 0.0, 0.0);
         this.right = new Vec3(0.0, 0.0, 1.0);
         this.up = new Vec3(0.0, 1.0, 0.0);
@@ -40,7 +40,7 @@ class PerspectiveCamera {
         this.nearPlane = 0.5;
         this.farPlane = 5000;
 
-        this.speed = 150;
+        this.speed = 300;
         this.dragSpeed = 0.003;
 
         this.isDragging = false;

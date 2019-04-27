@@ -1,31 +1,4 @@
-const BG_COLOR = new Vec3(240,248,255).over(255);
-
-class Twig {
-    public position: Vec3;
-    public tangent: Vec3;
-    public normal: Vec3;
-    public binormal: Vec3;
-    public orientationMatrix: Mat4;
-    public modelMatrix: Mat4;
-
-    constructor(position: Vec3, treeTangent: Vec3, treeNormal: Vec3, i: number) {
-        this.position = position;
-
-        // make the twig stick out of the tree
-        this.tangent = treeTangent.times(2).plus(treeNormal).normalize();
-
-        this.binormal = this.tangent.cross(treeNormal).normalize();
-        this.normal = this.tangent.cross(this.binormal).normalize();
-
-        this.orientationMatrix = createOrientationMatrix(this.tangent, this.normal, this.binormal);
-        this.modelMatrix = new Mat4()
-            .scale(randomBetweenFloat(0.02, 0.25))
-            .mul(this.orientationMatrix)
-            .rotate(rad(i*120 + randomBetween(-15, 15)), treeTangent)
-            .translate(this.position);
-    }
-}
-
+const BG_COLOR = new Vec3(197,231,252).over(255);
 
 class Scene {
     public gl: WebGL2RenderingContext;
@@ -43,7 +16,10 @@ class Scene {
     private lightPos: Vec3;
     private lightLookat: Vec3;
     private fullScreenQuad: GameObject;
-    private treeObj: GameObject;
+
+    // tree
+    private tree: TreeObject;
+    private tree2: TreeObject;
 
     // shaders
     private depthShader?: Program;
@@ -60,8 +36,10 @@ class Scene {
     // materials
     private depthMaterial: Material;
     private intancedDepthMaterial: Material;
-    public treem: Material;
-    leavesDepthMaterial: Material;
+    private leavesDepthMaterial: Material;
+    private twigMaterial: Material;
+    private leafMaterial: Material;
+    private treeMaterial: Material;
 
     initShaders() {
         console.log('compiling and linking shaders');
@@ -73,13 +51,13 @@ class Scene {
 
         this.instancedDepthShader = Program.from(gl, 'depth_instanced.vert', 'depth.frag', [
             { position: 0, name: 'vertexPosition' },
-            { position: 3, name: 'modelMatrix' },
+            { position: 3, name: 'instanceModelMatrix' },
         ]);
 
         this.leavesDepthShader = Program.from(gl, 'depth_instanced.vert', 'depth_leaves.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 2, name: 'vertexTexCoord' },
-            { position: 3, name: 'modelMatrix' },
+            { position: 3, name: 'instanceModelMatrix' },
         ]);
 
         this.treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
@@ -94,7 +72,7 @@ class Scene {
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
             { position: 2, name: 'vertexTexCoord' },
-            { position: 3, name: 'modelMatrix' },
+            { position: 3, name: 'instanceModelMatrix' },
         ]);
 
         this.fquadShader = Program.from(gl, 'fquad.vert', 'fquad.frag', [
@@ -111,7 +89,7 @@ class Scene {
         this.twigShader = Program.from(gl, 'twig.vert', 'twig.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
-            { position: 3, name: 'modelMatrix' },
+            { position: 3, name: 'instanceModelMatrix' },
         ]);
 
         this.groundShader = Program.from(gl, 'ground.vert', 'ground.frag', [
@@ -167,43 +145,29 @@ class Scene {
 
         // tree
         // -------------------------------------------------------------------
-        console.log('creating tree');
-        const tree = new Tree();
-        tree.growFully();
+        this.treeMaterial = new Material(gl, this.treeShader!);
+        this.treeMaterial.treeTexture.set(new Texture2D(gl, 'media/bark.jpg'));
+        this.treeMaterial.treeTextureNorm.set(new Texture2D(gl, 'media/bark_normal.jpg'));
+        this.treeMaterial.treeTextureHeight.set(new Texture2D(gl, 'media/bark_height.jpg'));
+        this.treeMaterial.mossTexture.set(new Texture2D(gl, 'media/mossy_rock.jpg'));
+        this.treeMaterial.mossTextureNorm.set(new Texture2D(gl, 'media/mossy_rock_normal.jpg'));
+        this.treeMaterial.mossTextureHeight.set(new Texture2D(gl, 'media/mossy_rock_height.jpg'));
+        this.treeMaterial.mossyness.set(1.75);
+        this.treeMaterial.depthTexture.set(this.depthTexture);
 
-        const treeGeometry = new TreeGeometry(gl);
-        treeGeometry.setPoints(tree);
-        const treeMaterial = new Material(gl, this.treeShader!);
-        treeMaterial.treeTexture.set(new Texture2D(gl, 'media/bark.jpg'));
-        treeMaterial.treeTextureNorm.set(new Texture2D(gl, 'media/bark_normal.jpg'));
-        treeMaterial.treeTextureHeight.set(new Texture2D(gl, 'media/bark_height.jpg'));
-        treeMaterial.mossTexture.set(new Texture2D(gl, 'media/mossy_rock.jpg'));
-        treeMaterial.mossTextureNorm.set(new Texture2D(gl, 'media/mossy_rock_normal.jpg'));
-        treeMaterial.mossTextureHeight.set(new Texture2D(gl, 'media/mossy_rock_height.jpg'));
-        treeMaterial.mossyness.set(1.75);
-        treeMaterial.depthTexture.set(this.depthTexture);
-
-        this.treem = treeMaterial;
-        this.treem.rendermode.set(0);
-        console.log(treeMaterial);
-
-        const treeObject = new GameObject(new Mesh(treeGeometry, treeMaterial, this.depthMaterial));
-
+        this.treeMaterial.rendermode.set(0);
+        console.log(this.treeMaterial);
 
         // leaves
         // -------------------------------------------------------------------
-        console.log('creating leaves');
-        const leafMaterial = new Material(gl, this.leavesShader!);
-        leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
+        this.leafMaterial = new Material(gl, this.leavesShader!);
+        this.leafMaterial.leaves.set(new Texture2D(gl, `media/leaf01.jpg`));
         const leaves_alpha_texture = new Texture2D(gl, `media/leaf01_alpha.jpg`);
         this.leavesDepthMaterial.leaves_alpha.set(leaves_alpha_texture);
-        leafMaterial.leaves_alpha.set(leaves_alpha_texture);
-        leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
-        leafMaterial.depthTexture.set(this.depthTexture);
+        this.leafMaterial.leaves_alpha.set(leaves_alpha_texture);
+        this.leafMaterial.leaves_translucency.set(new Texture2D(gl, `media/leaf01_translucency.jpg`));
+        this.leafMaterial.depthTexture.set(this.depthTexture);
 
-        const quadGeometry = new QuadGeometry(gl);
-        const leavesGeometry = new InstancedGeometry(gl, quadGeometry, 3, true);
-        const leavesObject = new GameObject(new Mesh(leavesGeometry, leafMaterial, this.leavesDepthMaterial));
 
 
         // fullscreen quad
@@ -211,72 +175,26 @@ class Scene {
         console.log('creating fullscreen quad');
         const fquadMaterial = new Material(gl, this.fquadShader!);
         fquadMaterial.text.set(this.depthTexture);
-        this.fullScreenQuad = new GameObject(new Mesh(quadGeometry, fquadMaterial));
+        this.fullScreenQuad = new GameObject(new Mesh(new QuadGeometry(gl), fquadMaterial));
 
 
         // frenet frames
         // -------------------------------------------------------------------
         console.log('creating frenet frames');
         const frenetMaterial = new Material(gl, this.frenetShader!);
-        const frenetGeometry = new FrenetGeometry(gl);
-        frenetGeometry.setPoints(tree);
-        const frenetFrames = new GameObject(new Mesh(frenetGeometry, frenetMaterial, this.depthMaterial));
 
 
         // twigs
         // -------------------------------------------------------------------
         console.log('creating twigs');
-        const twigMaterial = new Material(gl, this.twigShader!);
-        twigMaterial.depthTexture.set(this.depthTexture);
-        const twigs = new InstancedGeometry(gl, new TwigGeometry(gl), 3, false);
-        twigs.setModelMatrices([new Mat4().scale(new Vec3(1, 0.07, 1))]);
-        const twigsObject = new GameObject(new Mesh(twigs, twigMaterial, this.intancedDepthMaterial));
-
-
-        // twig modelmatrices
-        // -------------------------------------------------------------------
-        console.log('calculating twig model matrices');
-        const twigs_model = tree.nodes
-            .filter(node => node.width < 3 && node.children.length > 0)
-            .flatMap(node => {
-                let agak = [];
-                const leaf_count = randomBetween(2, 3);
-                for (let i = 0; i < leaf_count; i++) {
-                    agak.push(new Twig(node.parent!.pos, node.tangent, node.normal, i));
-                }
-                return agak;
-            });
-
-        console.log(`twig count: ${twigs_model.length}`);
-        twigs.setModelMatrices(twigs_model.map(t => t.modelMatrix));
-
-
-        // leaf modelmatrices
-        // -------------------------------------------------------------------
-        console.log('calculating leaf model matrices');
-        const LEAF_SCALE = 100.0;
-        leavesGeometry.setModelMatrices(
-            twigs_model
-                .map(m => new Mat4()
-                    .scale(LEAF_SCALE)
-                    // rotate
-                        // .translate(new Vec3(0, 0.5*LEAF_SCALE, 0))
-                        // .rotate(rad(90), m.tangent)
-                        // .translate(new Vec3(0, -0.5*LEAF_SCALE, 0))
-                    .rotate(rad(-13))
-                    .translate(new Vec3(0, LEAF_SCALE*1.6, 0))
-                    .mul(m.modelMatrix)
-                )
-        );
-        console.log(`leaf count: ${twigs_model.length}`);
-
-        this.treeObj = treeObject;
+        this.twigMaterial = new Material(gl, this.twigShader!);
+        this.twigMaterial.depthTexture.set(this.depthTexture);
 
         // ground
         // -------------------------------------------------------------------
         const groundMaterial = new Material(gl, this.groundShader!);
         groundMaterial.depthTexture.set(this.depthTexture);
-        const ground = new GameObject(new Mesh(quadGeometry, groundMaterial, this.depthMaterial));
+        const ground = new GameObject(new Mesh(new QuadGeometry(gl), groundMaterial, this.depthMaterial));
         const ground_scale = 10000;
         ground.scale.set(ground_scale, ground_scale, ground_scale);
         ground.orientationVector.set(1, 0, 0);
@@ -287,10 +205,20 @@ class Scene {
         // -------------------------------------------------------------------
         this.gameObjects = [];
         this.gameObjects.push(ground);
-        this.gameObjects.push(treeObject);
-        this.gameObjects.push(leavesObject);
-        this.gameObjects.push(twigsObject);
-        // this.gameObjects.push(frenetFrames);
+
+
+        // tree
+        // -------------------------------------------------------------------
+        this.tree = new TreeObject(gl,
+            this.treeMaterial, this.leafMaterial, this.twigMaterial,
+            frenetMaterial,
+            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
+
+        this.tree2 = new TreeObject(gl,
+            this.treeMaterial, this.leafMaterial, this.twigMaterial,
+            frenetMaterial,
+            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
+        this.tree2.position.set(0, 0, 500);
 
 
         // light and camera
@@ -302,7 +230,6 @@ class Scene {
     }
 
     update(gl: WebGL2RenderingContext, keysPressed: any): void {
-        gl.clearDepth(1.0);
         // time
         // -------------------------------------------------------------------
         const timeAtThisFrame = new Date().getTime();
@@ -324,7 +251,7 @@ class Scene {
         Uniforms.camera.wLiPos.set(this.lightPos);
 
         const lightView = lookAt(this.lightPos, this.lightLookat, PerspectiveCamera.WORLD_UP);
-        const lightProjection = ortho(-300, 300, -300, 300, 1, 1000);
+        const lightProjection = ortho(-1000, 1000, -1000, 1000, 1, 1000);
 
         Uniforms.camera.lightSpaceMatrix
             .set(lightView)
@@ -335,22 +262,19 @@ class Scene {
         // -------------------------------------------------------------------
         for (let mode of [0, 1, 2, 3, 4, 5]) {
             if (keysPressed[mode]) {
-                this.treem.rendermode.set(mode);
+                this.treeMaterial.rendermode.set(mode);
             }
         }
 
-        const render_tree_only = false;
 
         // render to framebuffer
         // -------------------------------------------------------------------
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        if (!render_tree_only) {
-            for (const go of this.gameObjects) {
-                go.draw(true);
-            }
-        } else {
-            this.treeObj.draw(true);
+        this.tree.draw(true);
+        this.tree2.draw(true);
+        for (const go of this.gameObjects) {
+            go.draw(true);
         }
 
 
@@ -361,14 +285,11 @@ class Scene {
         if (keysPressed.SPACE) {
             this.fullScreenQuad.draw();
         } else {
-            if (!render_tree_only) {
-                for (const go of this.gameObjects) {
-                    go.draw();
-                }
-            } else {
-                this.treeObj.draw();
+            this.tree.draw();
+            this.tree2.draw();
+            for (const go of this.gameObjects) {
+                go.draw();
             }
-
         }
     }
 
@@ -387,6 +308,3 @@ class Scene {
         this.camera.mouseUp();
     };
 }
-
-
-

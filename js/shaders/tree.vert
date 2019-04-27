@@ -6,7 +6,6 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
     in vec3 tangent;
     in vec3 bitangent;
 
-
     uniform struct {
         mat4 modelMatrix;
         mat4 lightSpaceMatrix;

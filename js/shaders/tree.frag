@@ -13,6 +13,10 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
     uniform float rendermode;
 
+    uniform struct {
+        float strength;
+    } shadow;
+
     in vec3 lightSpacePos;
     in vec3 modelPosition;
     in vec3 worldPos;
@@ -26,9 +30,6 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
     out vec4 fragmentColor;
 
-    uniform struct {
-        float strength;
-    } shadow;
 
     float snoise(vec3 r) {
         vec3 s = vec3(7502, 22777, 4767);
@@ -40,14 +41,25 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         return f / 32.0 + 0.5;
     }
 
-    vec3 snoiseGrad(vec3 r) {
-        vec3 s = vec3(7502, 22777, 4767);
-        vec3 f = vec3(0.0, 0.0, 0.0);
-        for(int i=0; i < 16; i++) {
-            f += cos( dot(s - vec3(32768, 32768, 32768), r) / 65536.0) * s;
-            s = mod(s, 32768.0) * 2.0 + floor(s / 32768.0);
+    float shadow_percentage(sampler2D shadowMap, vec3 lightSpacePos) {
+        int shadow_count = 0;
+
+        float bias = 0.005;
+
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
+
+        // 3x3
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+                float pcfDepth = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
+                if (pcfDepth < shadow_coord.z - bias) {
+                    shadow_count++;
+                }
+            }
         }
-        return f / 65536.0;
+
+        return float(shadow_count) / 9.0;
     }
 
     void main(void) {
@@ -70,7 +82,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         if (height_diff > 0.0 && height_diff < interpolate_at) {
             float interpolated = 1.0 - abs(height_diff) / interpolate_at;
             m = mix(texture(treeTexture, texCoord).rgb, texture(mossTexture, texCoord).rgb, interpolated);
-            N = mix(texture(treeTextureNorm, texCoord).rgb, texture(mossTextureNorm, texCoord).rgb, interpolated) * 2.0 - 1.0;
+            N = normalize(mix(texture(treeTextureNorm, texCoord).rgb, texture(mossTextureNorm, texCoord).rgb, interpolated) * 2.0 - 1.0);
         } else if (height_diff > 0.0) {
             m = texture(treeTexture, texCoord).rgb;
             N = texture(treeTextureNorm, texCoord).rgb * 2.0 - 1.0;
@@ -93,18 +105,13 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.75);
         // color *= clamp(distance(modelPosition, vec3(0, 200, 0)) / 120.0, 0.33, 1.0);
-
-        vec3 shadow_coord = lightSpacePos*0.5+0.5;
-        if (texture(depthTexture, shadow_coord.xy).r < shadow_coord.z-0.005) {
-            color *= shadow.strength;
-        }
+        color *= 1.0 - shadow_percentage(depthTexture, lightSpacePos) * shadow.strength;
 
         fragmentColor = vec4(color, 1);
-        // fragmentColor = vec4(smoothstep(vec3(t), vec3(t)/2.0, vec3(0.4)), 1);
 
         switch (int(rendermode)) {
-            case 1: fragmentColor = vec4(m, 1); break;
-            case 2: fragmentColor = texture(treeTexture, texCoord); break;
+            case 2: fragmentColor = vec4(m, 1); break;
+            case 1: fragmentColor = texture(treeTexture, texCoord); break;
             case 3: fragmentColor = vec4(N*0.5 + 0.5, 1); break;
             case 4: fragmentColor = vec4(texCoord, 0, 1); break;
             case 5: fragmentColor = vec4(vec3(t), 1); break;
