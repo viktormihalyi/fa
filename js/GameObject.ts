@@ -3,7 +3,7 @@ class GameObject {
     public position: Vec3;
     public orientation: number;
     public orientationVector: Vec3;
-    public scale: Vec3;
+    public scale: Vec3 | number;
     public modelMatrix: Mat4;
 
     constructor(mesh: Mesh) {

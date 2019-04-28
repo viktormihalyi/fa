@@ -2,17 +2,26 @@
 class Tree {
     public nodes: TreeNode[];
     public attractionPoints: Vec3[];
-    public middleNodes: TreeNode[];
-    public ending_nodes: TreeNode[];
     private config: TreeConfig;
 
     constructor() {
+        this.nodes = [];
+        this.attractionPoints = [];
+        this.config = new TreeConfig();
+
+        this.init();
+    }
+
+    public regrow(): void {
+        this.init();
+        this.growFully();
+    }
+
+    private init(): void {
         this.config = new TreeConfig();
 
         this.nodes = [];
         this.attractionPoints = [];
-        this.middleNodes = [];
-        this.ending_nodes = [];
 
         // setup starting tree - just one one
         this.nodes.push(new TreeNode(
@@ -35,7 +44,6 @@ class Tree {
             }
         }
     }
-
     public growFully(): void {
         for (let i = 0; i < 100; i++) {
             this.grow();
@@ -291,7 +299,6 @@ class Tree {
             const endingNode = new TreeNode(node, ending_node_pos, node.tangent, node.width/2, node.normal, node.branch_length/2);
             node.children.push(endingNode);
             this.nodes.push(endingNode);
-            this.ending_nodes.push(endingNode);
         }
     }
 

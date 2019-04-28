@@ -1,4 +1,3 @@
-
 class TreeNode {
     public parent: TreeNode | null;
     public children: TreeNode[];

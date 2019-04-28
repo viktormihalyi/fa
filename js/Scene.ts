@@ -45,6 +45,8 @@ class Scene {
         console.log('compiling and linking shaders');
         const gl = this.gl;
 
+        // depth shaders
+        // -------------------------------------------------------------------
         this.depthShader = Program.from(gl, 'depth.vert', 'depth.frag', [
             { position: 0, name: 'vertexPosition' },
         ]);
@@ -60,6 +62,8 @@ class Scene {
             { position: 3, name: 'instanceModelMatrix' },
         ]);
 
+        // normal shaders
+        // -------------------------------------------------------------------
         this.treeShader = Program.from(gl, 'tree.vert', 'tree.frag', [
             { position: 0, name: 'vertexPosition' },
             { position: 1, name: 'vertexNormal' },
@@ -190,16 +194,16 @@ class Scene {
         this.twigMaterial = new Material(gl, this.twigShader!);
         this.twigMaterial.depthTexture.set(this.depthTexture);
 
+
         // ground
         // -------------------------------------------------------------------
         const groundMaterial = new Material(gl, this.groundShader!);
         groundMaterial.depthTexture.set(this.depthTexture);
         const ground = new GameObject(new Mesh(new QuadGeometry(gl), groundMaterial, this.depthMaterial));
-        const ground_scale = 10000;
-        ground.scale.set(ground_scale, ground_scale, ground_scale);
+        ground.scale = 100000;
         ground.orientationVector.set(1, 0, 0);
         ground.orientation = rad(90);
-        ground.position.set(0, 0, 0);
+
 
         // game objects
         // -------------------------------------------------------------------
@@ -301,9 +305,11 @@ class Scene {
     onmousedown(): void {
         this.camera.mouseDown();
     }
+
     onmousemove(event: MouseEvent): void {
         this.camera.mouseMove(event);
     }
+
     onmouseup(): void {
         this.camera.mouseUp();
     };

@@ -51,8 +51,8 @@ class TreeObject {
             .translate(this.position);
     }
 
-    private init() {
-        this.tree.growFully();
+    public init() {
+        this.tree.regrow();
 
         this.treeGeometry.setPoints(this.tree);
 

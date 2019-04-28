@@ -44,7 +44,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
     }
 
     void main(void) {
-        float noise = snoise((worldPos.xyz / worldPos.w)/10.0);
+        float noise = snoise((worldPos.xyz / worldPos.w)/20.0);
 
         vec3 color = mix(vec3(86,125,70)/255.0, vec3(34,139,34)/255.0, noise);
 

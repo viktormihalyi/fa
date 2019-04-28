@@ -15,11 +15,13 @@
             <div id="status"></div>
             moss:
             <input type="range" min="-0.5" max="2.5" value="1.75" step="0.02" class="slider"
-                oninput="app.scene.treem.mossyness.set(this.value);console.log(this.value);">
+                oninput="app.scene.treeMaterial.mossyness.set(this.value);console.log(this.value);">
             <br>
             shadow:
             <input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider"
                 oninput="Uniforms.shadow.strength.set(1-this.value);console.log(this.value);">
+            <br>
+            <input type="button" onclick="app.scene.tree.init();app.scene.tree2.init();" value="new">
         </div>
     </div>
 
@@ -48,6 +50,7 @@
     <script src="js/SphereGeometry.js"></script>
     <script src="js/TreeGeometry.js"></script>
     <script src="js/FrenetGeometry.js"></script>
+    <script src="js/InfiniteQuadGeometry.js"></script>
     <script src="js/Scene.js"></script>
     <script src="js/PerspectiveCamera.js"></script>
     <script src="js/Tree.js"></script>

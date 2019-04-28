@@ -21,7 +21,7 @@ declare class Mat4 {
     premul(m: Mat4): this;
     mul(m: Mat4): this;
 
-    scale(u: Vec3): this;
+    scale(u: Vec3 | number): this;
     scale(u: number, v: number, s: number): this;
     scale(t: number): this;
 

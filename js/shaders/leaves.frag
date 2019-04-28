@@ -69,7 +69,9 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         float nv = max(dot(N, V), 0.0);
         float nh = max(dot(N, H), 0.0);
 
-        vec3 m = translucency*1.0 + vec3(255,192,203)/255.0*0.0;
+        vec3 m = translucency;
+        // m = translucency*0.3 + vec3(255,192,203)/255.0*0.7;
+
         vec3 color = m;// * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
         // color *= distance(worldPos, vec3(0, 200, 0)) / 200.0;
         color *= 1.0-shadow_percentage(depthTexture, lightSpacePos)*shadow.strength;
