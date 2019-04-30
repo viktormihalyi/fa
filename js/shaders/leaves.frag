@@ -31,16 +31,16 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
 
         // 3x3
-        for (int x = -1; x <= 1; ++x) {
-            for (int y = -1; y <= 1; ++y) {
-                float pcfDepth = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
-                if (pcfDepth < shadow_coord.z - bias) {
+        for (float x = -1.0; x <= 1.0; x += 0.5) {
+            for (float y = -1.0; y <= 1.0; y += 0.5) {
+                float dep = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
+                if (dep < shadow_coord.z - bias) {
                     shadow_count++;
                 }
             }
         }
 
-        return float(shadow_count) / 9.0;
+        return float(shadow_count) / 25.0;
     }
 
     void main(void) {

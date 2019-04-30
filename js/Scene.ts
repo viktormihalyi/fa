@@ -11,7 +11,7 @@ class Scene {
     private gameObjects: GameObject[];
 
     private depthTexture: WebGLTexture;
-    private fb: WebGLFramebuffer;
+    private depthFrameBuffer: WebGLFramebuffer;
 
     private lightPos: Vec3;
     private lightLookat: Vec3;
@@ -40,6 +40,12 @@ class Scene {
     private twigMaterial: Material;
     private leafMaterial: Material;
     private treeMaterial: Material;
+
+    // etc
+    private targetTextureWidth: number;
+    private targetTextureHeight: number;
+    private canvasWidth: number;
+    private canvasHeight: number;
 
     initShaders() {
         console.log('compiling and linking shaders');
@@ -105,6 +111,8 @@ class Scene {
         this.gl = gl;
         this.initShaders();
 
+        this.canvasWidth = 0;
+        this.canvasHeight = 0;
 
         // time
         // -------------------------------------------------------------------
@@ -124,11 +132,11 @@ class Scene {
         // create depth texture
         // -------------------------------------------------------------------
         console.log('creating texture for depth buffer');
-        const targetTextureWidth = app.canvas.clientWidth;
-        const targetTextureHeight = app.canvas.clientHeight;
+        this.targetTextureWidth = 1024;
+        this.targetTextureHeight = 1024;
         this.depthTexture = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, this.depthTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, targetTextureWidth, targetTextureHeight, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, this.targetTextureWidth, this.targetTextureHeight, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -138,8 +146,8 @@ class Scene {
         // create depth buffer
         // -------------------------------------------------------------------
         console.log('creating depth framebuffer');
-        this.fb = gl.createFramebuffer()!;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+        this.depthFrameBuffer = gl.createFramebuffer()!;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.depthFrameBuffer);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.depthTexture, 0);
 
         this.depthMaterial = new Material(gl, this.depthShader!);
@@ -251,11 +259,11 @@ class Scene {
 
         // update light
         // -------------------------------------------------------------------
-        this.lightPos.set(Math.cos(t/2)*100, 500, Math.sin(t/2)*100);
+        this.lightPos.set(Math.cos(t/66)*600, 500, Math.sin(t/66)*600);
         Uniforms.camera.wLiPos.set(this.lightPos);
 
         const lightView = lookAt(this.lightPos, this.lightLookat, PerspectiveCamera.WORLD_UP);
-        const lightProjection = ortho(-1000, 1000, -1000, 1000, 1, 1000);
+        const lightProjection = ortho(-1000, 1000, -1000, 1000, 10, 3000);
 
         Uniforms.camera.lightSpaceMatrix
             .set(lightView)
@@ -273,7 +281,8 @@ class Scene {
 
         // render to framebuffer
         // -------------------------------------------------------------------
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.depthFrameBuffer);
+        gl.viewport(0, 0, this.targetTextureWidth, this.targetTextureHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.tree.draw(true);
         this.tree2.draw(true);
@@ -285,6 +294,7 @@ class Scene {
         // render to screen
         // -------------------------------------------------------------------
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, this.canvasWidth, this.canvasHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (keysPressed.SPACE) {
             this.fullScreenQuad.draw();
@@ -298,6 +308,8 @@ class Scene {
     }
 
     onresize(width: number, height: number): void {
+        this.canvasWidth = width;
+        this.canvasHeight = height;
         console.log(`canvas resized to ${width} x ${height}`);
         this.camera.setAspectRatio(width / height);
     }

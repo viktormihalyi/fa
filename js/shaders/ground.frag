@@ -22,25 +22,38 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         return f / 32.0 + 0.5;
     }
 
-    float shadow_percentage(sampler2D shadowMap, vec3 lightSpacePos) {
-        int shadow_count = 0;
+    bool is_out_of_01(vec3 pos) {
+        return pos.x > 1.0 || pos.y > 1.0 || pos.z > 1.0;
+            //    pos.x < 0.0 || pos.y < 0.0 || pos.z < 0.0;
+    }
 
+    float shadow_percentage(sampler2D shadowMap, vec3 lightSpacePos) {
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        if (is_out_of_01(shadow_coord)) {
+            return 0.0;
+        }
+
+        int shadow_count = 0;
+        vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
         float bias = 0.005;
 
-        vec3 shadow_coord = lightSpacePos*0.5+0.5;
-        vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
-
-        // 3x3
-        for (int x = -1; x <= 1; ++x) {
-            for (int y = -1; y <= 1; ++y) {
-                float pcfDepth = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
-                if (pcfDepth < shadow_coord.z - bias) {
+        // 5x5
+        for (float x = -1.0; x <= 1.0; x += 0.5) {
+            for (float y = -1.0; y <= 1.0; y += 0.5) {
+                float dep = texture(shadowMap, shadow_coord.xy + vec2(x, y) * texelSize).r;
+                if (dep < shadow_coord.z - bias) {
                     shadow_count++;
                 }
             }
         }
 
-        return float(shadow_count) / 9.0;
+        return float(shadow_count) / 25.0;
+    }
+
+    float shadow_diff(sampler2D shadowMap, vec3 lightSpacePos) {
+        vec3 shadow_coord = lightSpacePos*0.5+0.5;
+        float dep = texture(shadowMap, shadow_coord.xy).r;
+        return shadow_coord.z - dep;
     }
 
     void main(void) {
