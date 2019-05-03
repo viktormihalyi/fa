@@ -60,6 +60,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         float noise = snoise((worldPos.xyz / worldPos.w)/20.0);
 
         vec3 color = mix(vec3(86,125,70)/255.0, vec3(34,139,34)/255.0, noise);
+        color = vec3(1, 1, 1);
 
         color *= 1.0-shadow_percentage(depthTexture, lightSpacePos)*shadow.strength;
 

@@ -19,6 +19,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
     in vec3 lightSpacePos;
     in vec3 modelPosition;
+    in vec3 actualWorldPos;
     in vec3 worldPos;
     in vec3 wNormal;
     in vec3 wView;
@@ -68,7 +69,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         vec3 kd = vec3(1.0, 1.0, 1.0);
         vec3 ks = vec3(1.0, 1.0, 1.0);
 
-        float t = snoise(modelPosition);
+        float t = snoise(actualWorldPos/5.0+vec3(100));
 
         float bark_height = texture(treeTextureHeight, texCoord).r;
         float mossy_rock_height = texture(mossTextureHeight, texCoord).r + t * mossyness - 1.0;
@@ -78,7 +79,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         vec3 m;
         float height_diff = bark_height - mossy_rock_height;
 
-        float interpolate_at = 0.05;
+        float interpolate_at = 0.15;
         if (height_diff > 0.0 && height_diff < interpolate_at) {
             float interpolated = 1.0 - abs(height_diff) / interpolate_at;
             m = mix(texture(treeTexture, texCoord).rgb, texture(mossTexture, texCoord).rgb, interpolated);

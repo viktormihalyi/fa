@@ -22,7 +22,7 @@ class PerspectiveCamera {
 
 
     constructor() {
-        this.position = new Vec3(-400.0, 250.0, 0.0);
+        this.position = new Vec3(-800.0, 250.0, 0.0);
         this.ahead = new Vec3(1.0, 0.0, 0.0);
         this.right = new Vec3(0.0, 0.0, 1.0);
         this.up = new Vec3(0.0, 1.0, 0.0);
@@ -129,6 +129,13 @@ class PerspectiveCamera {
         this.mouseDelta.x += event.movementX;
         this.mouseDelta.y += event.movementY;
         event.preventDefault();
+    }
+
+    private lastTouch: TouchEvent | undefined;
+    public touchMove(event: TouchEvent): void {
+        this.mouseDelta.x += event.touches[0].clientX;
+        this.mouseDelta.y += event.touches[0].clientY;
+        this.lastTouch = event;
     }
 
     public mouseUp(): void {

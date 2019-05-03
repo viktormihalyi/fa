@@ -51,6 +51,10 @@ class App {
         this.canvas.onmouseup = () => {
             this.scene.onmouseup();
         };
+        this.canvas.ontouchmove = (event) => {
+            this.scene.ontouch(event);
+            event.stopPropagation();
+        }
         window.addEventListener('resize', () => this.resize());
         window.requestAnimationFrame(() => this.update());
     }

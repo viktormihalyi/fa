@@ -22,6 +22,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
     out vec3 wView;
     out vec3 wEye;
     out vec3 worldPos;
+    out vec3 actualWorldPos;
     out mat3 TBN;
 
     #define normal
@@ -47,6 +48,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         wNormal  = ((vec4(vertexNormal, 0) * camera.modelMatrix).xyz);
         worldPos = wPos.xyz;
 #endif
+        actualWorldPos = wPos.xyz / wPos.w;
         lightSpacePos = (wPos * camera.lightSpaceMatrix).xyz;
         texCoord = vertexTexCoord;
         modelPosition = vertexPosition;

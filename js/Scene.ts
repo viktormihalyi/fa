@@ -1,4 +1,5 @@
-const BG_COLOR = new Vec3(197,231,252).over(255);
+// const BG_COLOR = new Vec3(197,231,252).over(255);
+const BG_COLOR = new Vec3(1, 1, 1);
 
 class Scene {
     public gl: WebGL2RenderingContext;
@@ -18,8 +19,7 @@ class Scene {
     private fullScreenQuad: GameObject;
 
     // tree
-    private tree: TreeObject;
-    private tree2: TreeObject;
+    private trees: TreeObject[];
 
     // shaders
     private depthShader?: Program;
@@ -132,8 +132,8 @@ class Scene {
         // create depth texture
         // -------------------------------------------------------------------
         console.log('creating texture for depth buffer');
-        this.targetTextureWidth = 1024;
-        this.targetTextureHeight = 1024;
+        this.targetTextureWidth = 2048;
+        this.targetTextureHeight = 2048;
         this.depthTexture = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, this.depthTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, this.targetTextureWidth, this.targetTextureHeight, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
@@ -208,6 +208,7 @@ class Scene {
         const groundMaterial = new Material(gl, this.groundShader!);
         groundMaterial.depthTexture.set(this.depthTexture);
         const ground = new GameObject(new Mesh(new QuadGeometry(gl), groundMaterial, this.depthMaterial));
+        ground.position.set(0, -1, 0);
         ground.scale = 100000;
         ground.orientationVector.set(1, 0, 0);
         ground.orientation = rad(90);
@@ -221,17 +222,27 @@ class Scene {
 
         // tree
         // -------------------------------------------------------------------
-        this.tree = new TreeObject(gl,
+
+        const t0 = new TreeObject(gl,
             this.treeMaterial, this.leafMaterial, this.twigMaterial,
             frenetMaterial,
             this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
-
-        this.tree2 = new TreeObject(gl,
+        const t1 = new TreeObject(gl,
             this.treeMaterial, this.leafMaterial, this.twigMaterial,
             frenetMaterial,
             this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
-        this.tree2.position.set(0, 0, 500);
+        t1.position.set(0, 0, 500);
 
+        const t2 = new TreeObject(gl,
+            this.treeMaterial, this.leafMaterial, this.twigMaterial,
+            frenetMaterial,
+            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
+        t2.position.set(0, 0, -500);
+
+        this.trees = [];
+        this.trees.push(t0);
+        this.trees.push(t1);
+        this.trees.push(t2);
 
         // light and camera
         // -------------------------------------------------------------------
@@ -259,7 +270,8 @@ class Scene {
 
         // update light
         // -------------------------------------------------------------------
-        this.lightPos.set(Math.cos(t/66)*600, 500, Math.sin(t/66)*600);
+        const def_offset = radians(145);
+        this.lightPos.set(Math.cos(t/66+def_offset)*600, 500, Math.sin(t/66+def_offset)*600);
         Uniforms.camera.wLiPos.set(this.lightPos);
 
         const lightView = lookAt(this.lightPos, this.lightLookat, PerspectiveCamera.WORLD_UP);
@@ -278,14 +290,16 @@ class Scene {
             }
         }
 
+        const time_before_render = Date.now();
 
         // render to framebuffer
         // -------------------------------------------------------------------
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.depthFrameBuffer);
         gl.viewport(0, 0, this.targetTextureWidth, this.targetTextureHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        this.tree.draw(true);
-        this.tree2.draw(true);
+        for (const t of this.trees) {
+            t.draw(true);
+        }
         for (const go of this.gameObjects) {
             go.draw(true);
         }
@@ -299,12 +313,17 @@ class Scene {
         if (keysPressed.SPACE) {
             this.fullScreenQuad.draw();
         } else {
-            this.tree.draw();
-            this.tree2.draw();
+            for (const t of this.trees) {
+                t.draw();
+            }
             for (const go of this.gameObjects) {
                 go.draw();
             }
         }
+
+        const time_after_render = Date.now();
+        const render_time_ms = Math.max(time_after_render - time_before_render, 1);
+        // console.log(`${1000/render_time_ms} fps`);
     }
 
     onresize(width: number, height: number): void {
@@ -325,4 +344,8 @@ class Scene {
     onmouseup(): void {
         this.camera.mouseUp();
     };
+
+    ontouch(event: TouchEvent): void {
+        this.camera.touchMove(event);
+    }
 }

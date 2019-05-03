@@ -1,6 +1,6 @@
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 12;
 const HALF_CIRCLE_RES = CIRCLE_RES / 2;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
@@ -48,7 +48,7 @@ function u_texcoord_for_cylinder(cylinder_resolution: number, t: number): number
 }
 
 function u_texcoords_for_cylinder(n: number): number[] {
-    return new Array(n).fill(0).map((_, index) => u_texcoord_for_cylinder(6, index)); // TODO 6 -> n?
+    return new Array(n).fill(0).map((_, index) => u_texcoord_for_cylinder(n, index));
 }
 
 
@@ -163,11 +163,16 @@ class TreeGeometry implements IGeometry {
         // ending circle
         for (const node of tree.nodes.filter(n => n.children.length === 0)) {
             const node_points = getCirclePointsForNode(node);
+            const texture_coordinates: number[] = u_texcoords_for_cylinder(CIRCLE_RES);
             for (let i = 0; i < CIRCLE_RES; i++) {
                 const nextidx = (i+1) % CIRCLE_RES;
-                raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1), node.tangent, node.binormal()));
-                raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1), node.tangent, node.binormal()));
-                raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(0.5, node.depth+1), node.tangent, node.binormal()));
+
+                const u      = texture_coordinates[i];
+                const u_next = texture_coordinates[nextidx];
+
+                raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(u,      node.depth), node.tangent, node.binormal()));
+                raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5,    node.depth+1), node.tangent, node.binormal()));
+                raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(u_next, node.depth), node.tangent, node.binormal()));
             }
         }
 

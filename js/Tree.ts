@@ -8,8 +8,6 @@ class Tree {
         this.nodes = [];
         this.attractionPoints = [];
         this.config = new TreeConfig();
-
-        this.init();
     }
 
     public regrow(): void {
@@ -18,7 +16,7 @@ class Tree {
     }
 
     private init(): void {
-        this.config = new TreeConfig();
+        this.config.generate();
 
         this.nodes = [];
         this.attractionPoints = [];
@@ -33,11 +31,18 @@ class Tree {
             this.config.BRANCH_LENGTH));
 
         // generate attraction points
+        const max_x = this.config.CIRCLE_CENTER.x + this.config.CIRCLE_RADIUS;
+        const min_x = this.config.CIRCLE_CENTER.x - this.config.CIRCLE_RADIUS;
+        const max_y = this.config.CIRCLE_CENTER.y + this.config.CIRCLE_RADIUS;
+        const min_y = this.config.CIRCLE_CENTER.y - this.config.CIRCLE_RADIUS;
+        const max_z = this.config.CIRCLE_CENTER.z + this.config.CIRCLE_RADIUS;
+        const min_z = this.config.CIRCLE_CENTER.z - this.config.CIRCLE_RADIUS;
+
         while (this.attractionPoints.length < this.config.ATTRACTION_POINT_COUNT) {
             const rndpoint = new Vec3(
-                randomBetween(-1000, 1000),
-                randomBetween(50, 1000),
-                randomBetween(-1000, 1000));
+                randomBetween(min_x, max_x),
+                randomBetween(min_y, max_y),
+                randomBetween(min_z, max_z));
 
             if (this.good_point(rndpoint)) {
                 this.attractionPoints.push(rndpoint);
@@ -45,10 +50,10 @@ class Tree {
         }
     }
     public growFully(): void {
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < this.config.GROW_ITERATIONS; i++) {
             this.grow();
         }
-        console.log(`growing for 100 resulted in ${this.nodes.length} nodes`);
+        console.log(`growing for ${this.config.GROW_ITERATIONS} resulted in ${this.nodes.length} nodes`);
         this.spline(1);
         // this.remove_intersecting_nodes(0.8);
         this.add_ends();
@@ -190,12 +195,9 @@ class Tree {
     }
 
     good_point(pos: Vec3): boolean {
-        const a = this.config.CIRCLE_RADIUS*2;
-        const b = this.config.CIRCLE_RADIUS*1;
-        const c = this.config.CIRCLE_RADIUS*2;
-        return Math.pow((pos.x-this.config.CIRCLE_CENTER.x) / a, 2) +
-            Math.pow((pos.y-this.config.CIRCLE_CENTER.y) / b, 2) +
-            Math.pow((pos.z-this.config.CIRCLE_CENTER.z) / c, 2) <= 1;
+        return Math.pow((pos.x - this.config.CIRCLE_CENTER.x) / this.config.CIRCLE_RADIUS, 2) +
+               Math.pow((pos.y - this.config.CIRCLE_CENTER.y) / this.config.CIRCLE_RADIUS * this.config.FLATNESS, 2) +
+               Math.pow((pos.z - this.config.CIRCLE_CENTER.z) / this.config.CIRCLE_RADIUS, 2) <= 1;
     }
 
     // keep only the attraction points which are further
@@ -273,7 +275,7 @@ class Tree {
             source,
             source.pos.plus(direction.times(source.branch_length)),
             direction,
-            source.width*this.config.BRANCH_WIDTH_SCALE,//*Math.pow(angle, 0.0),
+            source.width*this.config.BRANCH_WIDTH_SCALE*angle,
             principal_normal,
             source.branch_length * this.config.BRANCH_LENGTH_SCALE);
 

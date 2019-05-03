@@ -56,10 +56,37 @@ class TreeObject {
 
         this.treeGeometry.setPoints(this.tree);
 
+        let tree_width_avg = 0;
+        for (let node of this.tree.nodes) {
+            tree_width_avg += node.width;
+        }
+        tree_width_avg /= this.tree.nodes.length;
+
+        let mean = (Math.min(...this.tree.nodes.map(n => n.width)) + Math.max(...this.tree.nodes.map(n => n.width))) / 2;
+        let width_at_first_bif = -1;
+
+        function traverse_tree(root: TreeNode, callback: (node: TreeNode) => void): void {
+            callback(root);
+            for (const child of root.children) {
+                traverse_tree(child, callback);
+            }
+        }
+
+        traverse_tree(this.tree.nodes[0], function(node: TreeNode): void {
+            if (width_at_first_bif === -1 && node.children.length > 1) {
+                width_at_first_bif = node.width;
+            }
+        });
+        console.log(`tree width avg: ${tree_width_avg}, mean: ${mean}, at_first_bif: ${width_at_first_bif}`);
+
+        const PUT_LEAVES_ON_NODE = (node: TreeNode): boolean => {
+            return node.width < width_at_first_bif && node.children.length > 0;
+        };
+
         // twig modelmatrices
         // -------------------------------------------------------------------
         const twigs_model = this.tree.nodes
-            .filter(node => node.width < 3 && node.children.length > 0)
+            .filter(PUT_LEAVES_ON_NODE)
             .flatMap(node => {
                 let agak = [];
                 const leaf_count = randomBetween(2, 3);
