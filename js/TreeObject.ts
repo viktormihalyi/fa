@@ -39,7 +39,7 @@ class TreeObject {
         this.gameObjects.push(new GameObject(new Mesh(this.treeGeometry, treeMaterial, treeMaterialDepth)));
         this.gameObjects.push(new GameObject(new Mesh(this.leavesGeometry, leafMaterial, leafMaterialDepth)));
         this.gameObjects.push(new GameObject(new Mesh(this.twigsGeometry, twigMaterial, twigMaterialDepth)));
-        // this.objects.push(new GameObject(new Mesh(this.frenetGeometry, frenetMaterial)));
+        // this.gameObjects.push(new GameObject(new Mesh(this.frenetGeometry, frenetMaterial)));
 
         this.init();
     }
@@ -89,7 +89,7 @@ class TreeObject {
             .filter(PUT_LEAVES_ON_NODE)
             .flatMap(node => {
                 let agak = [];
-                const leaf_count = randomBetween(2, 3);
+                const leaf_count = randomBetween(2, 4);
                 for (let i = 0; i < leaf_count; i++) {
                     agak.push(new Twig(node.parent!.pos, node.tangent, node.normal, i));
                 }
@@ -100,19 +100,16 @@ class TreeObject {
 
         // leaf modelmatrices
         // -------------------------------------------------------------------
-        const LEAF_SCALE = 100.0;
         this.leavesGeometry.setModelMatrices(
             twigs_model
-                .map(m => new Mat4()
-                    .scale(LEAF_SCALE)
-                    // rotate
-                        // .translate(new Vec3(0, 0.5*LEAF_SCALE, 0))
-                        // .rotate(rad(90), m.tangent)
-                        // .translate(new Vec3(0, -0.5*LEAF_SCALE, 0))
-                    .rotate(rad(-13))
-                    .translate(new Vec3(0, LEAF_SCALE*1.6, 0))
-                    .mul(m.modelMatrix)
-                )
+                .map(m => {
+                    const leaf_scale = randomBetween(90, 120);
+                    return new Mat4()
+                        .scale(leaf_scale)
+                        .rotate(rad(-13))
+                        .translate(new Vec3(0, leaf_scale * 1.6, 0))
+                        .mul(m.modelMatrix)
+                })
         );
 
         this.frenetGeometry.setPoints(this.tree);

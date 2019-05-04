@@ -37,23 +37,23 @@ class FrenetGeometry {
         const vertexBuf: Vec3[] = [];
         const colorBuf: Vec3[] = [];
 
-        const add_frame = (pos: Vec3, tangent: Vec3, normal: Vec3) => {
+        const add_frame = (pos: Vec3, tangent: Vec3, normal: Vec3, w: number) => {
             vertexBuf.push(pos);
-            vertexBuf.push(pos.plus(tangent.clone().normalize().times(VEC_LENGTH)));
+            vertexBuf.push(pos.plus(tangent.clone().normalize().times(VEC_LENGTH+w)));
             colorBuf.push(TANGENT_COLOR, TANGENT_COLOR);
 
             vertexBuf.push(pos);
-            vertexBuf.push(pos.plus(normal.clone().normalize().times(VEC_LENGTH)));
+            vertexBuf.push(pos.plus(normal.clone().normalize().times(VEC_LENGTH+w)));
             colorBuf.push(NORMAL_COLOR, NORMAL_COLOR);
 
             vertexBuf.push(pos);
-            vertexBuf.push(pos.plus(tangent.cross(normal).normalize().times(VEC_LENGTH)));
+            vertexBuf.push(pos.plus(tangent.cross(normal).normalize().times(VEC_LENGTH+w)));
             colorBuf.push(BINORMAL_COLOR, BINORMAL_COLOR);
         }
 
         for (const node of tree.nodes) {
             assert(node.tangent !== undefined, 'wtf');
-            add_frame(node.pos, node.tangent, node.normal);
+            add_frame(node.pos, node.tangent, node.normal, node.width);
         }
 
         this.vertexCount = vertexBuf.length;

@@ -2,20 +2,20 @@ class TreeConfig {
     [x: string]: any;
 
     public generate() {
-        this.GROW_ITERATIONS = 100;
+        this.GROW_ITERATIONS = 200;
         // number of attraction points to generate
-        this.ATTRACTION_POINT_COUNT = randomBetween(100, 200)*3;
+        this.ATTRACTION_POINT_COUNT = randomBetween(100, 200)*10;
 
         this.FLATNESS = randomBetweenFloat(0.1, 2);
 
         // attraction points generation around a circle
         this.CIRCLE_CENTER = new Vec3(randomBetween(-33, 33), 500+randomBetween(-50, 50), randomBetween(-33, 33));
-        this.CIRCLE_RADIUS = randomBetween(150, 350);
+        this.CIRCLE_RADIUS = randomBetween(300, 400);
 
         // space colonization algorithm constnts
         this.INFL_MIN_DIST = 8;
         this.INFL_MAX_DIST = 150;
-        this.BRANCH_LENGTH = randomBetween(25, 35);
+        this.BRANCH_LENGTH = randomBetween(15, 25);
         this.BRANCH_LENGTH_SCALE = 0.99;
 
         // starting tree node values
@@ -32,7 +32,7 @@ class TreeConfig {
         this.PREVIOUS_DIR_POWER = 0.8;
 
         // width scales with each node
-        this.BRANCH_WIDTH_SCALE = randomBetweenFloat(0.92, 0.96);
+        this.BRANCH_WIDTH_SCALE = randomBetweenFloat(0.94, 0.98);
 
         console.log(this);
     }

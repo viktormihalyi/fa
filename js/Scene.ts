@@ -304,6 +304,9 @@ class Scene {
             go.draw(true);
         }
 
+        if (keysPressed.H) {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        }
 
         // render to screen
         // -------------------------------------------------------------------
