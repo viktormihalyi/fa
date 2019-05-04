@@ -146,6 +146,8 @@ class TreeObject {
                     if (!this.isFinished) {
                         this.isFinished = true;
                         this.tree.finishTree();
+                        this.updateGeometries();
+                        this.spheres.setModelMatrices([]);
                     }
                 }
             }
