@@ -32,6 +32,7 @@ class Scene {
     private frenetShader?: Program;
     private twigShader?: Program;
     private groundShader?: Program;
+    private attrShader?: Program;
 
     // materials
     private depthMaterial: Material;
@@ -40,6 +41,7 @@ class Scene {
     private twigMaterial: Material;
     private leafMaterial: Material;
     private treeMaterial: Material;
+    private attrMaterial: Material;
 
     // etc
     private targetTextureWidth: number;
@@ -105,6 +107,13 @@ class Scene {
         this.groundShader = Program.from(gl, 'ground.vert', 'ground.frag', [
             { position: 0, name: 'vertexPosition' }
         ]);
+
+        this.attrShader = Program.from(gl, 'attr.vert', 'attr.frag', [
+            { position: 0, name: 'vertexPosition' },
+            { position: 1, name: 'vertexNormal' },
+            { position: 3, name: 'instanceModelMatrix' },
+        ]);
+
     }
 
     constructor(gl: WebGL2RenderingContext, app: App) {
@@ -168,7 +177,9 @@ class Scene {
         this.treeMaterial.depthTexture.set(this.depthTexture);
 
         this.treeMaterial.rendermode.set(0);
-        console.log(this.treeMaterial);
+
+        this.attrMaterial = new Material(gl, this.attrShader!);
+        this.attrMaterial.depthTexture.set(this.depthTexture);
 
         // leaves
         // -------------------------------------------------------------------
@@ -222,27 +233,26 @@ class Scene {
 
         // tree
         // -------------------------------------------------------------------
-
         const t0 = new TreeObject(gl,
             this.treeMaterial, this.leafMaterial, this.twigMaterial,
             frenetMaterial,
-            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
-        const t1 = new TreeObject(gl,
-            this.treeMaterial, this.leafMaterial, this.twigMaterial,
-            frenetMaterial,
-            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
-        t1.position.set(0, 0, 500);
+            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial, this.attrMaterial);
+        // const t1 = new TreeObject(gl,
+        //     this.treeMaterial, this.leafMaterial, this.twigMaterial,
+        //     frenetMaterial,
+        //     this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial, this.attrMaterial);
+        // t1.position.set(0, 0, 500);
 
-        const t2 = new TreeObject(gl,
-            this.treeMaterial, this.leafMaterial, this.twigMaterial,
-            frenetMaterial,
-            this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial);
-        t2.position.set(0, 0, -500);
+        // const t2 = new TreeObject(gl,
+        //     this.treeMaterial, this.leafMaterial, this.twigMaterial,
+        //     frenetMaterial,
+        //     this.depthMaterial, this.leavesDepthMaterial, this.intancedDepthMaterial, this.attrMaterial);
+        // t2.position.set(0, 0, -500);
 
         this.trees = [];
         this.trees.push(t0);
-        this.trees.push(t1);
-        this.trees.push(t2);
+        // this.trees.push(t1);
+        // this.trees.push(t2);
 
         // light and camera
         // -------------------------------------------------------------------

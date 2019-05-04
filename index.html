@@ -13,6 +13,8 @@
         <canvas id="canvas"></canvas>
         <div id="overlay">
             <div id="status"></div>
+            <br>
+            <div hidden>
             moss:
             <input type="range" min="-0.5" max="2.5" value="1.75" step="0.02" class="slider"
                 oninput="app.scene.treeMaterial.mossyness.set(this.value);console.log(this.value);">
@@ -21,6 +23,7 @@
             <input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider"
                 oninput="Uniforms.shadow.strength.set(1-this.value);console.log(this.value);">
             <br>
+            </div>
             <input type="button" onclick="for(const t of app.scene.trees){t.init()}" value="new">
         </div>
     </div>
@@ -90,6 +93,9 @@
 
     <script src="js/shaders/fquad.vert"></script>
     <script src="js/shaders/fquad.frag"></script>
+
+    <script src="js/shaders/attr.vert"></script>
+    <script src="js/shaders/attr.frag"></script>
 </body>
 
 </html>

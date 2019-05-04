@@ -1,20 +1,16 @@
 class SphereGeometry {
     public gl: WebGL2RenderingContext;
-    public instanceCount: number;
-    public vao: WebGLVertexArrayObject;
+    public inputLayout: WebGLVertexArrayObject;
     public vertexBuffer: WebGLBuffer;
     public normalBuffer: WebGLBuffer;
     public texCoordBuffer: WebGLBuffer;
     public vertexCount: number;
-    public modelmatrix: WebGLBuffer;
-
 
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
-        this.instanceCount = 0;
 
-        this.vao = gl.createVertexArray()!;
-        gl.bindVertexArray(this.vao);
+        this.inputLayout = gl.createVertexArray()!;
+        gl.bindVertexArray(this.inputLayout);
 
         this.vertexBuffer = gl.createBuffer()!;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -78,56 +74,16 @@ class SphereGeometry {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vec2ArrayToFloat32Array(uvs), gl.STATIC_DRAW);
-
-
-        const vec4size = 4*4;
-
-        //  instanced model matrix
-        this.modelmatrix = gl.createBuffer()!;
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.modelmatrix);
-
-        gl.enableVertexAttribArray(3);
-        gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 4*vec4size, 0);
-        gl.enableVertexAttribArray(4);
-        gl.vertexAttribPointer(4, 4, gl.FLOAT, false, 4*vec4size, 1*vec4size);
-        gl.enableVertexAttribArray(5);
-        gl.vertexAttribPointer(5, 4, gl.FLOAT, false, 4*vec4size, 2*vec4size);
-        gl.enableVertexAttribArray(6);
-        gl.vertexAttribPointer(6, 4, gl.FLOAT, false, 4*vec4size, 3*vec4size);
-
-        gl.vertexAttribDivisor(3, 1);
-        gl.vertexAttribDivisor(4, 1);
-        gl.vertexAttribDivisor(5, 1);
-        gl.vertexAttribDivisor(6, 1);
-    }
-
-
-    setModelMatrices(listOfMatrices: Mat4[]) {
-        const gl = this.gl;
-
-        this.instanceCount = listOfMatrices.length;
-
-        const mat4size = 4*4*4;
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.modelmatrix);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.instanceCount * mat4size), gl.STATIC_DRAW);
-
-        for (let i = 0; i < listOfMatrices.length; i++) {
-            const m = listOfMatrices[i];
-            gl.bufferSubData(gl.ARRAY_BUFFER, i*mat4size, m.storage);
-        }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
 
     draw() {
-        if (this.vertexCount === 0 || this.instanceCount === 0) {
+        if (this.vertexCount === 0) {
             return;
         }
 
         const gl = this.gl;
-        gl.bindVertexArray(this.vao);
+        gl.bindVertexArray(this.inputLayout);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        gl.drawArraysInstanced(gl.TRIANGLES, 0, this.vertexCount, this.instanceCount);
+        gl.drawArrays(gl.TRIANGLES, 0, this.vertexCount);
     }
 }

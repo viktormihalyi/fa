@@ -1,22 +1,22 @@
 // http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
+const LOG_GROWTH = false;
 class Tree {
     public nodes: TreeNode[];
     public attractionPoints: Vec3[];
+    public growthCount: number;
     private config: TreeConfig;
 
     constructor() {
         this.nodes = [];
         this.attractionPoints = [];
+        this.growthCount = 0;
         this.config = new TreeConfig();
     }
 
-    public regrow(): void {
-        this.init();
-        this.growFully();
-    }
-
-    private init(): void {
+    public init(): void {
         this.config.generate();
+
+        this.growthCount = 0;
 
         this.nodes = [];
         this.attractionPoints = [];
@@ -49,13 +49,19 @@ class Tree {
             }
         }
     }
-    public growFully(): void {
+    public growFully(callback?: () => void): void {
         for (let i = 0; i < this.config.GROW_ITERATIONS; i++) {
             this.grow();
+            if (callback) {
+                callback();
+            }
         }
         console.log(`growing for ${this.config.GROW_ITERATIONS} resulted in ${this.nodes.length} nodes`);
+        this.finishTree();
+    }
+
+    public finishTree() {
         this.spline(1);
-        // this.remove_intersecting_nodes(0.8);
         this.add_ends();
         this.calculate_depth();
     }
@@ -202,12 +208,13 @@ class Tree {
 
     // keep only the attraction points which are further
     // away than a specific distance from all tree nodes
-    removeReachedAttractionPoints(): void {
+    private removeReachedAttractionPoints(): void {
         this.attractionPoints = this.attractionPoints.filter((e) => {
             // search for the closest tree node's distance
             let closestDist = Number.MAX_SAFE_INTEGER;
             for (let treeNode of this.nodes) {
-                let dist = treeNode.pos.minus(e).length();
+                this._helpervec3.setDifference(treeNode.pos, e);
+                let dist = this._helpervec3.length();
                 if (dist < closestDist) {
                     closestDist = dist;
                 }
@@ -260,7 +267,7 @@ class Tree {
         return Tree.grow_rmf_normal({pos, tangent: dir, normal} as TreeNode, direction);
     }
 
-    growFrom(source: TreeNode, direction: Vec3): void {
+    private growFrom(source: TreeNode, direction: Vec3): void {
         // frenet frame
         // https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas
         // const acceleration_vector = direction.minus(source.dir).normalize();
@@ -275,7 +282,7 @@ class Tree {
             source,
             source.pos.plus(direction.times(source.branch_length)),
             direction,
-            source.width*this.config.BRANCH_WIDTH_SCALE*angle,
+            source.width*this.config.BRANCH_WIDTH_SCALE,//*angle,
             principal_normal,
             source.branch_length * this.config.BRANCH_LENGTH_SCALE);
 
@@ -291,8 +298,10 @@ class Tree {
         this.nodes.push(newNode);
     }
 
+    private _helpervec3 = new Vec3();
     private dist_to_node(pos: Vec3, node: TreeNode): number {
-        return node.pos.minus(pos).length();
+        this._helpervec3.setDifference(node.pos, pos);
+        return this._helpervec3.length();
     }
 
     private add_ends(): void {
@@ -304,22 +313,40 @@ class Tree {
         }
     }
 
-    private grow(): void {
-        if (this.attractionPoints.length === 0 || this.nodes.length >= this.config.MAX_TREE_SIZE) {
-            return;
+    public traverse_from_root(callback: (node: TreeNode) => void) {
+        this.traverse_tree(this.nodes[0], callback);
+    }
+
+    private traverse_tree(root: TreeNode, callback: (node: TreeNode) => void): void {
+        callback(root);
+        for (const child of root.children) {
+            this.traverse_tree(child, callback);
         }
+    }
+
+    public grow(): boolean {
+        if (this.attractionPoints.length <= this.config.ATTRACTION_POINT_COUNT*0.1 // 90% is enough
+            || this.nodes.length >= this.config.MAX_TREE_SIZE
+            || this.growthCount >= this.config.GROW_ITERATIONS) {
+            return false;
+        }
+        const start = Date.now();
+        if (LOG_GROWTH) {
+            console.log(`attrs left: ${this.attractionPoints.length}/${this.config.ATTRACTION_POINT_COUNT}, tree size: ${this.nodes.length}/${this.config.MAX_TREE_SIZE}, growth: ${this.growthCount}/${this.config.GROW_ITERATIONS}`)
+        }
+
+        this.growthCount++;
 
         let influencedNodes: {node: TreeNode, attrs: Vec3[]}[];
         influencedNodes = this.nodes.map(node => ({node: node, attrs: []}));
 
         // find closest node to each attraction point
         let found = false;
-        for (let apoint of this.attractionPoints) {
-
+        for (const apoint of this.attractionPoints) {
             let closest: TreeNode|null  = null;
             let closestDist = Number.MAX_SAFE_INTEGER;
 
-            for (let treeNode of this.nodes) {
+            for (const treeNode of this.nodes) {
                 let dist = this.dist_to_node(apoint, treeNode);
                 if (dist < closestDist && this.config.INFL_MIN_DIST < dist && dist < this.config.INFL_MAX_DIST) {
                     closest = treeNode;
@@ -343,8 +370,7 @@ class Tree {
 
         } else {
             // grow according to attractions
-            for (let inflNode of influencedNodes) {
-
+            for (const inflNode of influencedNodes) {
                 // ignore those tree nodes that have no attraction
                 if (inflNode.attrs.length === 0) {
                     continue;
@@ -355,9 +381,13 @@ class Tree {
 
                 // sum up all attrpoint-node directions
                 let sumVect = new Vec3(0, 0, 0);
-                for (let apoint of attrs) {
+                for (const apoint of attrs) {
                     // sumVect.add(apoint.minus(inflNode.node.pos).normalize());
-                    sumVect.add(apoint.minus(inflNode.node.pos));
+
+                    // the 2 are the same
+                    // sumVect.add(apoint.minus(inflNode.node.pos));
+                    sumVect.add(apoint);
+                    sumVect.sub(inflNode.node.pos);
                 }
                 sumVect.normalize();
                 // also include the previous direction
@@ -371,5 +401,13 @@ class Tree {
 
         // remove consumed points
         this.removeReachedAttractionPoints();
+
+        if (LOG_GROWTH) {
+            const end = Date.now();
+            const start_end_diff = end - start;
+            console.log(`growing took ${start_end_diff} ms`);
+        }
+
+        return true;
     }
 }

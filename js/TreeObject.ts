@@ -1,12 +1,16 @@
+const GROW_INCREMENTALLY = false;
+
 class TreeObject {
     private gl: WebGL2RenderingContext;
 
+    private isFinished: boolean = false;
     private tree: Tree;
 
     private treeGeometry: TreeGeometry;
     private twigsGeometry: InstancedGeometry;
     private leavesGeometry: InstancedGeometry;
     private frenetGeometry: FrenetGeometry;
+    private spheres: InstancedGeometry;
 
     private gameObjects: GameObject[];
 
@@ -16,10 +20,12 @@ class TreeObject {
     public orientationVector: Vec3;
     private modelMatrix: Mat4;
 
+    private lastGrowth: number;
+
     constructor(gl: WebGL2RenderingContext,
                 treeMaterial: Material, leafMaterial: Material, twigMaterial: Material,
                 frenetMaterial: Material,
-                treeMaterialDepth: Material, leafMaterialDepth: Material, twigMaterialDepth: Material) {
+                treeMaterialDepth: Material, leafMaterialDepth: Material, twigMaterialDepth: Material, sphereMaterial: Material) {
 
         this.gl = gl;
         this.tree = new Tree();
@@ -30,6 +36,7 @@ class TreeObject {
         this.orientationVector = new Vec3();
         this.modelMatrix = new Mat4();
 
+        this.spheres = new InstancedGeometry(gl, new SphereGeometry(gl), 3, false);
         this.treeGeometry = new TreeGeometry(gl);
         this.twigsGeometry = new InstancedGeometry(gl,  new TwigGeometry(gl), 3, false);
         this.leavesGeometry = new InstancedGeometry(gl, new QuadGeometry(gl), 3, true);
@@ -41,6 +48,11 @@ class TreeObject {
         this.gameObjects.push(new GameObject(new Mesh(this.twigsGeometry, twigMaterial, twigMaterialDepth)));
         // this.gameObjects.push(new GameObject(new Mesh(this.frenetGeometry, frenetMaterial)));
 
+        if (GROW_INCREMENTALLY) {
+            this.gameObjects.push(new GameObject(new Mesh(this.spheres, sphereMaterial, twigMaterialDepth)));
+        }
+
+        this.lastGrowth = Date.now();
         this.init();
     }
 
@@ -51,10 +63,12 @@ class TreeObject {
             .translate(this.position);
     }
 
-    public init() {
-        this.tree.regrow();
-
+    private updateGeometries() {
         this.treeGeometry.setPoints(this.tree);
+
+        if (GROW_INCREMENTALLY) {
+            this.spheres.setModelMatrices(this.tree.attractionPoints.map(p => new Mat4().scale(2).translate(p)));
+        }
 
         let tree_width_avg = 0;
         for (let node of this.tree.nodes) {
@@ -65,14 +79,7 @@ class TreeObject {
         let mean = (Math.min(...this.tree.nodes.map(n => n.width)) + Math.max(...this.tree.nodes.map(n => n.width))) / 2;
         let width_at_first_bif = -1;
 
-        function traverse_tree(root: TreeNode, callback: (node: TreeNode) => void): void {
-            callback(root);
-            for (const child of root.children) {
-                traverse_tree(child, callback);
-            }
-        }
-
-        traverse_tree(this.tree.nodes[0], function(node: TreeNode): void {
+        this.tree.traverse_from_root((node: TreeNode): void => {
             if (width_at_first_bif === -1 && node.children.length > 1) {
                 width_at_first_bif = node.width;
             }
@@ -103,11 +110,11 @@ class TreeObject {
         this.leavesGeometry.setModelMatrices(
             twigs_model
                 .map(m => {
-                    const leaf_scale = randomBetween(90, 120);
+                    const leaf_scale = randomBetween(90, 175);
                     return new Mat4()
                         .scale(leaf_scale)
                         .rotate(rad(-13))
-                        .translate(new Vec3(0, leaf_scale * 1.6, 0))
+                        .translate(0, leaf_scale * 1.5, 0)
                         .mul(m.modelMatrix)
                 })
         );
@@ -115,9 +122,34 @@ class TreeObject {
         this.frenetGeometry.setPoints(this.tree);
     }
 
+    public init() {
+        this.tree.init();
+        if (!GROW_INCREMENTALLY) {
+            this.tree.growFully();
+        }
+        this.updateGeometries();
+    }
+
     public draw(depth: boolean = false) {
         this.updateModelMatrix();
         Uniforms.camera.modelMatrix.set(this.modelMatrix);
+
+        if (GROW_INCREMENTALLY) {
+            const t = Date.now();
+            if (t - this.lastGrowth > 250) {
+                const sc = this.tree.grow();
+                if (sc) {
+                    this.tree.calculate_depth();
+                    this.updateGeometries();
+                    this.lastGrowth = t;
+                } else {
+                    if (!this.isFinished) {
+                        this.isFinished = true;
+                        this.tree.finishTree();
+                    }
+                }
+            }
+        }
 
         for (let i = 0; i < this.gameObjects.length; i++) {
             this.gameObjects[i].draw(depth, false);
