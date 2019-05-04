@@ -19,7 +19,7 @@ class Twig {
         this.modelMatrix = new Mat4()
             .scale(randomBetweenFloat(0.02, 0.25))
             .mul(this.orientationMatrix)
-            .rotate(rad(i*120 + randomBetween(-15, 15)), treeTangent)
+            .rotate(rad(randomBetween(0, 360)), treeTangent)
             .translate(this.position);
     }
 }

@@ -21,9 +21,11 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
     out vec3 wView;
     out vec3 wEye;
     out vec3 worldPos;
+    out vec3 modelPos;
     out mat3 TBN;
 
     void main(void) {
+        modelPos = (vec4(vertexPosition, 1) * instanceModelMatrix).xyz;
         vec4 wPos = vec4(vertexPosition, 1) * instanceModelMatrix * camera.modelMatrix;
 
         uv = vertexTexCoord;
