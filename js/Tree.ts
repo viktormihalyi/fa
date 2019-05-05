@@ -61,7 +61,7 @@ class Tree {
     }
 
     public finishTree() {
-        this.spline(1);
+        // this.spline(1);
         this.add_ends();
         this.calculate_depth();
     }

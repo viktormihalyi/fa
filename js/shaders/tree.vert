@@ -25,7 +25,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
     out vec3 actualWorldPos;
     out mat3 TBN;
 
-    #define normal
+    // #define normal
 
     void main(void) {
         wEye = camera.wEye;

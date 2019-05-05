@@ -1,6 +1,6 @@
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 12;
+const CIRCLE_RES = 6;
 const HALF_CIRCLE_RES = CIRCLE_RES / 2;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
@@ -8,6 +8,7 @@ const SKIP_CYLINDER_AT_BIFURCATION = false;
 const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 
 const INDEX_VERTICES = false;
+const DRAW_WIREFRAME = true; // INDEX_VERTICES must be false
 
 // https://math.stackexchange.com/questions/73237/parametric-equation-of-a-circle-in-3d-space/73242#73242
 // circle in 3d
@@ -117,7 +118,13 @@ class TreeGeometry implements IGeometry {
     }
 
     setPoints(tree: Tree): void {
-        assert(tree.nodes.length < 65536, 'too many nodes, cannot be indexed');
+        if (INDEX_VERTICES) {
+            assert(tree.nodes.length < 65536, 'too many nodes, cannot be indexed');
+        }
+
+        if (DRAW_WIREFRAME) {
+            assert(INDEX_VERTICES == false, 'cannot index vertices when using wireframe mode');
+        }
 
         const gl = this.gl;
 
@@ -150,11 +157,17 @@ class TreeGeometry implements IGeometry {
                     // triangle 1
                     raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth), child.tangent, child.binormal()));
                     raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth), node.tangent, node.binormal()));
+                    if (DRAW_WIREFRAME) {
+                        raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth), node.tangent, node.binormal()));
+                    }
                     raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth), node.tangent, node.binormal()));
 
                     // triangle 2
                     raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth), child.tangent, child.binormal()));
                     raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth), node.tangent, node.binormal()));
+                    if (DRAW_WIREFRAME) {
+                        raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth), node.tangent, node.binormal()));
+                    }
                     raw_vertex_data.push(new VertexData(to  [nextidx], to [nextidx] .minus(child.pos).normalize(), new Vec2(u_next, child.depth), child.tangent, child.binormal()));
                 }
             }
@@ -172,7 +185,14 @@ class TreeGeometry implements IGeometry {
 
                 raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(u,      node.depth), node.tangent, node.binormal()));
                 raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5,    node.depth+1), node.tangent, node.binormal()));
+                if (DRAW_WIREFRAME) {
+                    raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5,    node.depth+1), node.tangent, node.binormal()));
+                }
                 raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(u_next, node.depth), node.tangent, node.binormal()));
+                if (DRAW_WIREFRAME) {
+                    raw_vertex_data.push(new VertexData(node_points[nextidx], new Vec3(0, 1, 0), new Vec2(u_next, node.depth), node.tangent, node.binormal()));
+                    raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(u,      node.depth), node.tangent, node.binormal()));
+                }
             }
         }
 
@@ -319,11 +339,15 @@ class TreeGeometry implements IGeometry {
         const gl = this.gl;
         gl.bindVertexArray(this.vao);
 
-        if (INDEX_VERTICES) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-            gl.drawElements(gl.TRIANGLES, this.index_count, gl.UNSIGNED_SHORT, 0);
+        if (DRAW_WIREFRAME) {
+            gl.drawArrays(gl.LINES, 0, this.vertex_count);
         } else {
-            gl.drawArrays(gl.TRIANGLES, 0, this.vertex_count);
+            if (INDEX_VERTICES) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+                gl.drawElements(gl.TRIANGLES, this.index_count, gl.UNSIGNED_SHORT, 0);
+            } else {
+                gl.drawArrays(gl.TRIANGLES, 0, this.vertex_count);
+            }
         }
     }
 }

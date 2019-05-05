@@ -44,8 +44,8 @@ class TreeObject {
 
         this.gameObjects = [];
         this.gameObjects.push(new GameObject(new Mesh(this.treeGeometry, treeMaterial, treeMaterialDepth)));
-        this.gameObjects.push(new GameObject(new Mesh(this.leavesGeometry, leafMaterial, leafMaterialDepth)));
-        this.gameObjects.push(new GameObject(new Mesh(this.twigsGeometry, twigMaterial, twigMaterialDepth)));
+        // this.gameObjects.push(new GameObject(new Mesh(this.leavesGeometry, leafMaterial, leafMaterialDepth)));
+        // this.gameObjects.push(new GameObject(new Mesh(this.twigsGeometry, twigMaterial, twigMaterialDepth)));
         // this.gameObjects.push(new GameObject(new Mesh(this.frenetGeometry, frenetMaterial)));
 
         if (GROW_INCREMENTALLY) {
