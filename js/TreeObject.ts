@@ -22,6 +22,9 @@ class TreeObject {
 
     private lastGrowth: number;
 
+    private middlePoint: Vec3;
+    private maxDistance: number;
+
     constructor(gl: WebGL2RenderingContext,
                 treeMaterial: Material, leafMaterial: Material, twigMaterial: Material,
                 frenetMaterial: Material,
@@ -29,6 +32,9 @@ class TreeObject {
 
         this.gl = gl;
         this.tree = new Tree();
+
+        this.middlePoint = new Vec3();
+        this.maxDistance = 0;
 
         this.scale = 1;
         this.position = new Vec3(0, 0, 0);
@@ -44,8 +50,8 @@ class TreeObject {
 
         this.gameObjects = [];
         this.gameObjects.push(new GameObject(new Mesh(this.treeGeometry, treeMaterial, treeMaterialDepth)));
-        // this.gameObjects.push(new GameObject(new Mesh(this.leavesGeometry, leafMaterial, leafMaterialDepth)));
-        // this.gameObjects.push(new GameObject(new Mesh(this.twigsGeometry, twigMaterial, twigMaterialDepth)));
+        this.gameObjects.push(new GameObject(new Mesh(this.leavesGeometry, leafMaterial, leafMaterialDepth)));
+        this.gameObjects.push(new GameObject(new Mesh(this.twigsGeometry, twigMaterial, twigMaterialDepth)));
         // this.gameObjects.push(new GameObject(new Mesh(this.frenetGeometry, frenetMaterial)));
 
         if (GROW_INCREMENTALLY) {
@@ -65,6 +71,23 @@ class TreeObject {
 
     private updateGeometries() {
         this.treeGeometry.setPoints(this.tree);
+
+        this.middlePoint.set();
+        let found: boolean = false;
+        this.tree.traverse_from_root((node: TreeNode): void => {
+            if (!found && node.children.length >= 2) {
+                found = true;
+                this.middlePoint.set(node.pos);
+            }
+        });
+
+        this.maxDistance = 0;
+        this.tree.traverse_from_root((node: TreeNode): void => {
+            const dist = node.pos.minus(this.middlePoint).length();
+            if (dist > this.maxDistance) {
+                this.maxDistance = dist;
+            }
+        });
 
         if (GROW_INCREMENTALLY) {
             this.spheres.setModelMatrices(this.tree.attractionPoints.map(p => new Mat4().scale(2).translate(p)));
@@ -133,6 +156,8 @@ class TreeObject {
     public draw(depth: boolean = false) {
         this.updateModelMatrix();
         Uniforms.camera.modelMatrix.set(this.modelMatrix);
+        Uniforms.shadow.middlePoint.set(this.middlePoint);
+        Uniforms.shadow.maxDistance.set(this.maxDistance);
 
         if (GROW_INCREMENTALLY) {
             const t = Date.now();
@@ -153,8 +178,8 @@ class TreeObject {
             }
         }
 
-        for (let i = 0; i < this.gameObjects.length; i++) {
-            this.gameObjects[i].draw(depth, false);
+        for (const obj of this.gameObjects) {
+            obj.draw(depth, false);
         }
     }
 }

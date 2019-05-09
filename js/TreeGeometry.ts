@@ -8,7 +8,7 @@ const SKIP_CYLINDER_AT_BIFURCATION = false;
 const CRICLE_STEP = 2*Math.PI/CIRCLE_RES;
 
 const INDEX_VERTICES = false;
-const DRAW_WIREFRAME = true; // INDEX_VERTICES must be false
+const DRAW_WIREFRAME = false; // INDEX_VERTICES must be false
 
 // https://math.stackexchange.com/questions/73237/parametric-equation-of-a-circle-in-3d-space/73242#73242
 // circle in 3d

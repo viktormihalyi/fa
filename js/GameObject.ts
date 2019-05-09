@@ -15,14 +15,14 @@ class GameObject {
         this.modelMatrix = new Mat4();
     }
 
-    updateModelMatrix(): void {
+    private updateModelMatrix(): void {
         this.modelMatrix.set()
             .scale(this.scale)
             .rotate(this.orientation, this.orientationVector)
             .translate(this.position);
     }
 
-    draw(depth: boolean = false, updateMatrix: boolean = true): void {
+    public draw(depth: boolean = false, updateMatrix: boolean = true): void {
         if (updateMatrix) {
             this.updateModelMatrix();
             Uniforms.camera.modelMatrix.set(this.modelMatrix);

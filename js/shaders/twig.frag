@@ -10,6 +10,8 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
     uniform struct {
         float strength;
+        vec3 middlePoint;
+        float maxDistance;
     } shadow;
 
     float snoise(vec3 r, int it) {
@@ -48,7 +50,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         float t = snoise(worldPos*nsc3, 16);
 
         vec3 color = vec3(85,107,47)/255.0*t;
-        // color *= distance(worldPos, vec3(0, 200, 0)) / 120.0;
+        // color *= distance(worldPos, shadow.middlePoint) / (shadow.maxDistance * 0.8);
         color *= 1.0-shadow_percentage(depthTexture, lightSpacePos)*shadow.strength;
 
         fragmentColor = vec4(color, 1);

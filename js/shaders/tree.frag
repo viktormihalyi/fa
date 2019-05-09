@@ -15,6 +15,8 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
     uniform struct {
         float strength;
+        vec3 middlePoint;
+        float maxDistance;
     } shadow;
 
     in vec3 lightSpacePos;
@@ -105,14 +107,14 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         float nh = max(dot(N, H), 0.0);
 
         vec3 color = m * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.75);
-        // color *= clamp(distance(modelPosition, vec3(0, 200, 0)) / 120.0, 0.33, 1.0);
+        // color *= distance(modelPosition, shadow.middlePoint) / (shadow.maxDistance * 0.8);
         color *= 1.0 - shadow_percentage(depthTexture, lightSpacePos) * shadow.strength;
 
         fragmentColor = vec4(color, 1);
 
         switch (int(rendermode)) {
-            case 2: fragmentColor = vec4(m, 1); break;
             case 1: fragmentColor = texture(treeTexture, texCoord); break;
+            case 2: fragmentColor = vec4(m, 1); break;
             case 3: fragmentColor = vec4(N*0.5 + 0.5, 1); break;
             case 4: fragmentColor = vec4(texCoord, 0, 1); break;
             case 5: fragmentColor = vec4(vec3(t), 1); break;

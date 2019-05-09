@@ -20,6 +20,8 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
 
     uniform struct {
         float strength;
+        vec3 middlePoint;
+        float maxDistance;
     } shadow;
 
 
@@ -63,7 +65,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         vec3 H = normalize(L + V);
 
         if (dot(N, L) < 0.0) {
-            // N = -N;
+            N = -N;
         }
 
         float nl = max(dot(N, L), 0.0);
@@ -74,7 +76,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         // m = translucency*0.3 + vec3(255,192,203)/255.0*0.7;
 
         vec3 color = m;// * max(kd * nl + ks * pow(nh, 1.0) * nl / max(nv, nl), 0.6);
-        // color *= distance(modelPos, vec3(0, 400, 0)) / 200.0;
+        // color *= distance(modelPos, shadow.middlePoint) / (shadow.maxDistance * 0.8);
         color *= 1.0-shadow_percentage(depthTexture, lightSpacePos)*shadow.strength;
 
         fragmentColor = vec4(color, alpha);
