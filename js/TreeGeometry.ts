@@ -1,6 +1,6 @@
 // circle resolution
 // each circle will be made of this many vertices
-const CIRCLE_RES = 6;
+const CIRCLE_RES = 12;
 const HALF_CIRCLE_RES = CIRCLE_RES / 2;
 
 const SKIP_CYLINDER_AT_BIFURCATION = false;
@@ -34,22 +34,6 @@ function getCirclePoints(pos: Vec3, normal: Vec3, binormal: Vec3, width: number)
 
 function getCirclePointsForNode(node: TreeNode): Vec3[] {
     return getCirclePoints(node.pos, node.normal, node.binormal(), node.width);
-}
-
-// cylinder res should be even, otherwise there is no opposite node, bla bla bla
-function u_texcoord_for_cylinder(cylinder_resolution: number, t: number): number {
-    const half_cylinder_res = cylinder_resolution/2;
-    if (t < half_cylinder_res) {
-        return t/half_cylinder_res;
-    } else if (t == half_cylinder_res) {
-        return 1;
-    } else /* if (t > half_cylinder_res) */ {
-        return (cylinder_resolution-t)/half_cylinder_res;
-    }
-}
-
-function u_texcoords_for_cylinder(n: number): number[] {
-    return new Array(n).fill(0).map((_, index) => u_texcoord_for_cylinder(n, index));
 }
 
 
@@ -136,8 +120,6 @@ class TreeGeometry implements IGeometry {
                 const from = getCirclePointsForNode(node);
                 const to  = getCirclePointsForNode(child);
 
-                const texture_coordinates: number[] = u_texcoords_for_cylinder(CIRCLE_RES);
-
                 for (let i = 0; i < CIRCLE_RES; i++) {
                     // triangle 1
                     // to   + i
@@ -151,14 +133,17 @@ class TreeGeometry implements IGeometry {
 
                     const nextidx = (i+1) % CIRCLE_RES;
 
-                    const u      = texture_coordinates[i];
-                    const u_next = texture_coordinates[nextidx];
+                    // const u      = texture_coordinates[i];
+                    // const u_next = texture_coordinates[nextidx];
+
+                    const u      = i       / CIRCLE_RES;
+                    const u_next = (i + 1) / CIRCLE_RES;
 
                     // triangle 1
                     raw_vertex_data.push(new VertexData(to  [i],       to [i]       .minus(child.pos).normalize(), new Vec2(u, child.depth), child.tangent, child.binormal()));
                     raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth), node.tangent, node.binormal()));
                     if (DRAW_WIREFRAME) {
-                        raw_vertex_data.push(new VertexData(from[i],       from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth), node.tangent, node.binormal()));
+                        raw_vertex_data.push(new VertexData(from[i],   from[i]      .minus(node.pos).normalize(),  new Vec2(u, node.depth), node.tangent, node.binormal()));
                     }
                     raw_vertex_data.push(new VertexData(from[nextidx], from[nextidx].minus(node.pos).normalize(),  new Vec2(u_next, node.depth), node.tangent, node.binormal()));
 
@@ -176,12 +161,11 @@ class TreeGeometry implements IGeometry {
         // ending circle
         for (const node of tree.nodes.filter(n => n.children.length === 0)) {
             const node_points = getCirclePointsForNode(node);
-            const texture_coordinates: number[] = u_texcoords_for_cylinder(CIRCLE_RES);
             for (let i = 0; i < CIRCLE_RES; i++) {
                 const nextidx = (i+1) % CIRCLE_RES;
 
-                const u      = texture_coordinates[i];
-                const u_next = texture_coordinates[nextidx];
+                const u      = i       / CIRCLE_RES;
+                const u_next = (i + 1) / CIRCLE_RES;
 
                 raw_vertex_data.push(new VertexData(node_points[i],       new Vec3(0, 1, 0), new Vec2(u,      node.depth), node.tangent, node.binormal()));
                 raw_vertex_data.push(new VertexData(node.pos,             new Vec3(0, 1, 0), new Vec2(0.5,    node.depth+1), node.tangent, node.binormal()));
@@ -200,12 +184,14 @@ class TreeGeometry implements IGeometry {
 
         const index_buffer: number[] = [];
         if (INDEX_VERTICES) {
-            const MAX_DIST_DIFF = 0.1;
+            const INDEXING_EPSILON = 0.01;
+
             console.log(`CIRLCE_RES = ${CIRCLE_RES}`);
             console.log(`vertices count: ${raw_vertex_data.length}, running vertex indexer...`);
 
             // calculate distance here
             const tmp = new Vec3();
+            const tmp2 = new Vec2();
 
             // track progress
             let i = 0;
@@ -223,7 +209,8 @@ class TreeGeometry implements IGeometry {
                 let is_new_vertex = true;
 
                 for (let i = unique_vertices.length - 1; i >= 0; i--) {
-                    if (tmp.setDifference(vd.position, unique_vertices[i].position).length2() < MAX_DIST_DIFF) {
+                    if (tmp.setDifference(vd.position, unique_vertices[i].position).length2() < INDEXING_EPSILON
+                            && tmp2.setDifference(vd.uv, unique_vertices[i].uv).length2() < INDEXING_EPSILON) {
                         index_buffer.push(i);
                         is_new_vertex = false;
                         break;

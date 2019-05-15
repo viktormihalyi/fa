@@ -95,7 +95,7 @@ Shader.source[document.currentScript.src.split(Shader.shaderDirectory)[1]] = `#v
         }
 
         // uncomment to 'disable' normal map
-        N = normalize(wNormal);
+        // N = normalize(wNormal);
 
 
         vec3 V = normalize(wView);
