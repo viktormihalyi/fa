@@ -16,3 +16,9 @@ compile to javascript:
 ```bash
 tsc
 ```
+
+## running
+
+chrome: requires some basic http server otherwise chrome doesnt allow loading images
+
+firefox: opening index.html is fine
