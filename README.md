@@ -12,6 +12,11 @@ you will need to have typescript installed:
 npm install -g typescript
 ```
 
+download dependencies:
+```
+npm install
+```
+
 compile to javascript:
 ```bash
 tsc
@@ -19,6 +24,6 @@ tsc
 
 ## running
 
-chrome: requires some basic http server otherwise chrome doesnt allow loading images
+Chrome: requires some basic http server otherwise Chrome doesnt allow loading images
 
-firefox: no http server required, just open index.html
+Firefox: no http server required, just open index.html
