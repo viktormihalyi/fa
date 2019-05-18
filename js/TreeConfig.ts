@@ -6,7 +6,7 @@ class TreeConfig {
         // number of attraction points to generate
         this.ATTRACTION_POINT_COUNT = randomBetween(300, 500);
 
-        this.FLATNESS = randomBetweenFloat(0.1, 1.5);
+        this.FLATNESS = randomBetweenFloat(0.8, 1.5);
 
         // attraction points generation around a circle
         this.CIRCLE_CENTER = new Vec3(randomBetween(-33, 33), 400+randomBetween(-50, 50), randomBetween(-33, 33));
